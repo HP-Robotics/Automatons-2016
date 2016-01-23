@@ -162,6 +162,8 @@ public class Robot extends IterativeRobot {
     	shooter.set(motorSpeed);
     	driveRobot(-stick.getRawAxis(1), - stick.getRawAxis(3));
     	SmartDashboard.putNumber("Speed", motorSpeed);
+    	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
+    	SmartDashboard.putNumber("rDrive", rDrive1.getSpeed());
     	writeCSV("\n" + Timer.getFPGATimestamp() + ", " + lDriveEncoder.get() + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed());
     	
     }
