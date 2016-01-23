@@ -44,6 +44,7 @@ public class Robot extends IterativeRobot {
 	double motorSpeed = 0.0;
 	boolean aButtonPressed = false;
 	boolean yButtonPressed= false;
+	double initTime;
 	
     /**
      * This function is run when the robot is first started up and should be
@@ -89,19 +90,20 @@ public class Robot extends IterativeRobot {
      */
     public void autonomousInit() {
     	autoLoopCounter = 0;
+    	initTime = Timer.getFPGATimestamp();
+    	
     }
 
     /**
      * This function is called periodically during autonomous
      */
     public void autonomousPeriodic() {
-    	if(autoLoopCounter < 100) //Check if we've completed 100 loops (approximately 2 seconds)
-		{
+    	if((Timer.getFPGATimestamp()-initTime) < 2.0 ) {
 			driveRobot(-0.2, -0.2); 	// drive forwards half speed
-			autoLoopCounter++;
-			writeCSV(autoLoopCounter);
-			} else {
-			lDrive1.set(0.0); 	// stop robot
+			writeCSV("\n" + Timer.getFPGATimestamp() + ", " + lDriveEncoder.get() + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed());
+			
+		} else {
+			driveRobot(0.0, 0.0); 	// stop robot
 		}
     }
     
