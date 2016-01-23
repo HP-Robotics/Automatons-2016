@@ -4,9 +4,11 @@ import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.TalonSRX;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.Timer;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -32,6 +34,7 @@ public class Robot extends IterativeRobot {
 	VictorSP lDrive2;
 	VictorSP rDrive1;
 	VictorSP rDrive2;
+	TalonSRX shooter;
 	
 	File f;
 	BufferedWriter bw;
@@ -61,9 +64,10 @@ public class Robot extends IterativeRobot {
     	lDrive2 = new VictorSP(2);
     	rDrive1 = new VictorSP(3);
     	rDrive2 = new VictorSP(4);
+    	shooter = new TalonSRX(5);
     	
-    	lDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
-    	rDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
+    	lDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
+    	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
     	//create .csv file to log data
     	try {
     		f = new File("home/lvuser/Output.csv");
@@ -97,7 +101,7 @@ public class Robot extends IterativeRobot {
 			autoLoopCounter++;
 			writeCSV(autoLoopCounter);
 			} else {
-			lDrive1.set(0.0);; 	// stop robot
+			lDrive1.set(0.0); 	// stop robot
 		}
     }
     
@@ -113,7 +117,7 @@ public class Robot extends IterativeRobot {
     	} catch(IOException e) {
     		e.printStackTrace();
     	}
-    	
+    	writeCSV("\nTimestamp, Left Encoder, Right Encoder, Left Speed, Right Speed");
     }
 
     /**
@@ -121,6 +125,7 @@ public class Robot extends IterativeRobot {
      */
     
     public void teleopPeriodic() {
+    	
     	if(stick.getRawButton(2)) {
     		if(!aButtonPressed && (motorSpeed < 1)){
     			aButtonPressed = true;
@@ -142,9 +147,9 @@ public class Robot extends IterativeRobot {
     		yButtonPressed= false;
     	}
     	
-    	//System.err.println(motorSpeed);
-    	driveRobot(stick.getRawAxis(1), stick.getRawAxis(3));
-    	writeCSV(motorSpeed);
+    	shooter.set(motorSpeed);
+    	driveRobot(-stick.getRawAxis(1), - stick.getRawAxis(3));
+    	writeCSV("\n" + Timer.getFPGATimestamp() + ", " + lDriveEncoder.get() + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed());
     	
     }
     
