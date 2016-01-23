@@ -4,11 +4,14 @@ import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.TalonSRX;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -36,6 +39,8 @@ public class Robot extends IterativeRobot {
 	VictorSP rDrive2;
 	TalonSRX shooter;
 	
+	//Preferences prefs;
+	
 	File f;
 	BufferedWriter bw;
 	FileWriter fw;
@@ -57,9 +62,9 @@ public class Robot extends IterativeRobot {
     	camera.setQuality(50);
     	camera.startAutomaticCapture("cam0");
     	
-    	
-    	
     	//create objects
+    	
+    	
     	stick = new Joystick(0);
     	lDrive1 = new VictorSP(1);
     	lDrive2 = new VictorSP(2);
@@ -69,6 +74,7 @@ public class Robot extends IterativeRobot {
     	
     	lDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
     	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
+    	
     	//create .csv file to log data
     	try {
     		f = new File("home/lvuser/Output.csv");
@@ -83,6 +89,8 @@ public class Robot extends IterativeRobot {
     	}
     	
     	bw = new BufferedWriter(fw);
+    	
+    	//motorSpeed = prefs.getDouble("Speed", 0.0);
     }
     
     /**
@@ -111,6 +119,8 @@ public class Robot extends IterativeRobot {
      * This function is called once each time the robot enters tele-operated mode
      */
     public void teleopInit() {
+    	LiveWindow.setEnabled(false);
+    	motorSpeed = 0.0;
     	try {
     		bw.write("Team2823");
     		bw.close();
@@ -151,6 +161,7 @@ public class Robot extends IterativeRobot {
     	
     	shooter.set(motorSpeed);
     	driveRobot(-stick.getRawAxis(1), - stick.getRawAxis(3));
+    	SmartDashboard.putNumber("Speed", motorSpeed);
     	writeCSV("\n" + Timer.getFPGATimestamp() + ", " + lDriveEncoder.get() + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed());
     	
     }
