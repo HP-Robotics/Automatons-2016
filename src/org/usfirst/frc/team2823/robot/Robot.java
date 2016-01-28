@@ -45,11 +45,17 @@ public class Robot extends IterativeRobot {
 	BufferedWriter bw;
 	FileWriter fw;
 	
-	int autoLoopCounter;
+	int autoCounter;
+	double autoTimePrev;
+	double autoPosPrev;
+	double autoVelPrev;
+	double initTime;
+	
 	double motorSpeed = 0.0;
 	boolean aButtonPressed = false;
 	boolean yButtonPressed= false;
-	double initTime;
+	
+	
 	
     /**
      * This function is run when the robot is first started up and should be
@@ -90,6 +96,15 @@ public class Robot extends IterativeRobot {
     	
     	bw = new BufferedWriter(fw);
     	
+    	try {
+    		bw.write("Team2823");
+    		bw.close();
+    		fw.close();
+    		
+    	} catch(IOException e) {
+    		e.printStackTrace();
+    	}
+    	writeCSV("\nTimestamp, Left Encoder, Right Encoder, Left Speed, Right Speed, dT, L-Vel, L-Accel");
     	//motorSpeed = prefs.getDouble("Speed", 0.0);
     }
     
@@ -97,8 +112,13 @@ public class Robot extends IterativeRobot {
      * This function is run once each time the robot enters autonomous mode
      */
     public void autonomousInit() {
-    	autoLoopCounter = 0;
+    	autoCounter = 0;
     	initTime = Timer.getFPGATimestamp();
+    	autoTimePrev = initTime;
+    	autoPosPrev = lDriveEncoder.get();
+    	autoVelPrev = 0;
+    	
+    	driveRobot(0.2, 0.2);
     	
     }
 
@@ -106,9 +126,27 @@ public class Robot extends IterativeRobot {
      * This function is called periodically during autonomous
      */
     public void autonomousPeriodic() {
-    	if((Timer.getFPGATimestamp()-initTime) < 2.0 ) {
-			driveRobot(-0.2, -0.2); 	// drive forwards half speed
-			writeCSV("\n" + Timer.getFPGATimestamp() + ", " + lDriveEncoder.get() + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed());
+    	
+    	if((Timer.getFPGATimestamp()-initTime) < 10.0 ) {
+			
+    		autoCounter++;
+    		
+			if(autoCounter > 9) {
+				double currentTime = Timer.getFPGATimestamp();
+				int currentPos = lDriveEncoder.get();
+				
+				double dT = (currentTime - autoTimePrev);
+				double V = (currentPos - autoPosPrev) / dT;
+				double A = (V - autoVelPrev) / dT;
+				
+				writeCSV("\n" + currentTime + ", " + currentPos + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed() + ", " + dT + ", " + V + ", " + A);
+				
+				autoTimePrev = currentTime;
+				autoPosPrev = currentPos;
+				autoVelPrev = V;
+				autoCounter = 0;
+			}
+			
 			
 		} else {
 			driveRobot(0.0, 0.0); 	// stop robot
@@ -121,15 +159,7 @@ public class Robot extends IterativeRobot {
     public void teleopInit() {
     	LiveWindow.setEnabled(false);
     	motorSpeed = 0.0;
-    	try {
-    		bw.write("Team2823");
-    		bw.close();
-    		fw.close();
-    		
-    	} catch(IOException e) {
-    		e.printStackTrace();
-    	}
-    	writeCSV("\nTimestamp, Left Encoder, Right Encoder, Left Speed, Right Speed");
+    
     }
 
     /**
