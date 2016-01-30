@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Preferences;
+import edu.wpi.first.wpilibj.SPI.Port;
 import edu.wpi.first.wpilibj.TalonSRX;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
@@ -64,11 +65,11 @@ public class Robot extends IterativeRobot {
     	
     	//create objects
     	stick = new Joystick(0);
-    	lDrive1 = new VictorSP(1);
-    	lDrive2 = new VictorSP(2);
-    	rDrive1 = new VictorSP(3);
-    	rDrive2 = new VictorSP(4);
-    	shooter = new TalonSRX(5);
+    	lDrive1 = new VictorSP(0);
+    	lDrive2 = new VictorSP(1);
+    	rDrive1 = new VictorSP(2);
+    	rDrive2 = new VictorSP(3);
+    	shooter = new TalonSRX(4);
     	
     	lDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
     	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
@@ -76,10 +77,10 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("InputSpeed", 0.0);
     	
     	//create and calibrate gyro and accelerometer
-    	gyro = new ADXRS450_Gyro();
-    	//accelerometer = new ADXL362(range, port);
+    	gyro = new ADXRS450_Gyro(Port.kOnboardCS0);
+    	accelerometer = new ADXL362(ADXL362.Range.k2G);
     	
-    	gyro.calibrate();
+    	//gyro.calibrate();
     	
     	//create .csv file to log data
     	try {
@@ -183,6 +184,8 @@ public class Robot extends IterativeRobot {
     		yButtonPressed= false;
     	}
     	*/
+    	
+    	//input speed from smart dashboard
     	motorSpeed = SmartDashboard.getNumber("InputSpeed");
     	
     	//drive shooter motor
@@ -195,7 +198,10 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Speed", motorSpeed);
     	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
     	SmartDashboard.putNumber("rDrive", rDrive1.getSpeed());
-    	SmartDashboard.putNumber("Gyro Rotation:", gyro.getAngle());
+    	SmartDashboard.putNumber("Gyro Rotation", gyro.getAngle());
+    	SmartDashboard.putNumber("X Acceleration", accelerometer.getX());
+    	SmartDashboard.putNumber("Y Acceleration", accelerometer.getY());
+    	SmartDashboard.putNumber("Z Acceleration", accelerometer.getAcceleration(ADXL362.Axes.kZ));
     	
     	//write data to .csv file
     	writeCSV("\n" + Timer.getFPGATimestamp() + ", " + lDriveEncoder.get() + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed());
