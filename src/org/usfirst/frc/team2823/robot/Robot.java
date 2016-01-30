@@ -4,6 +4,7 @@ import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.PIDOutput;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.SPI.Port;
 import edu.wpi.first.wpilibj.TalonSRX;
@@ -15,6 +16,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.ADXL362;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
+import edu.wpi.first.wpilibj.PIDController;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -38,7 +40,8 @@ public class Robot extends IterativeRobot {
 	ADXRS450_Gyro gyro;
 	ADXL362 accelerometer;
 	
-	//Preferences prefs;
+	ATM2016PIDController leftDrivingControl;
+	
 	
 	File f;
 	BufferedWriter bw;
@@ -53,7 +56,8 @@ public class Robot extends IterativeRobot {
 	
 	double motorSpeed = 0.0;
 	boolean aButtonPressed = false;
-	boolean yButtonPressed= false;
+	boolean yButtonPressed = false;
+	boolean xButtonPressed = false;
 	
     public void robotInit() {
     	
@@ -74,13 +78,22 @@ public class Robot extends IterativeRobot {
     	lDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
     	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
     	
+    	leftDrivingControl = new ATM2016PIDController(0.06, 0, 0, lDriveEncoder, new DrivePIDOutput());
+    	
     	SmartDashboard.putNumber("InputSpeed", 0.0);
+    	SmartDashboard.putNumber("P", 0.0);
+    	SmartDashboard.putNumber("I", 0.0);
+    	SmartDashboard.putNumber("D", 0.0);
     	
     	//create and calibrate gyro and accelerometer
     	gyro = new ADXRS450_Gyro(Port.kOnboardCS0);
     	accelerometer = new ADXL362(ADXL362.Range.k2G);
     	
-    	//gyro.calibrate();
+    	gyro.reset();
+    	
+    	//reset encoders
+    	lDriveEncoder.reset();
+    	rDriveEncoder.reset();
     	
     	//create .csv file to log data
     	try {
@@ -191,8 +204,31 @@ public class Robot extends IterativeRobot {
     	//drive shooter motor
     	shooter.set(motorSpeed);
     	
-    	//drive robot with joystick values
-    	driveRobot(-stick.getRawAxis(1), - stick.getRawAxis(3));
+    	
+    	//if the X button is pressed, use PID to drive 500 encoder ticks
+    	if(stick.getRawButton(1)) {
+    		if(!xButtonPressed){
+    			xButtonPressed = true;
+    			
+    			leftDrivingControl.enable();
+    			leftDrivingControl.setSetpoint(lDriveEncoder.get() + 500);
+    			
+    		}
+    	} else {
+    		//otherwise disable PID and drive robot with joystick values
+    		xButtonPressed = false;
+    		
+    		leftDrivingControl.disable();
+    		driveRobot(stick.getRawAxis(1)* 0.75, stick.getRawAxis(3)* 0.75);
+    		
+    	}
+    	
+    	/*if(stick.getRawButton(3)){
+    		lDrive1.set(0.1);
+    	}
+    	else{
+    		lDrive1.set(0.0);
+    	}*/
     	
     	//send data to Smart Dashboard
     	SmartDashboard.putNumber("Speed", motorSpeed);
@@ -201,7 +237,12 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Gyro Rotation", gyro.getAngle());
     	SmartDashboard.putNumber("X Acceleration", accelerometer.getX());
     	SmartDashboard.putNumber("Y Acceleration", accelerometer.getY());
-    	SmartDashboard.putNumber("Z Acceleration", accelerometer.getAcceleration(ADXL362.Axes.kZ));
+    	SmartDashboard.putNumber("Z Acceleration", accelerometer.getZ());
+    	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
+    	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
+    	
+    	//update PID constants to Smart Dashboard values
+    	leftDrivingControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"));
     	
     	//write data to .csv file
     	writeCSV("\n" + Timer.getFPGATimestamp() + ", " + lDriveEncoder.get() + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed());
@@ -230,6 +271,19 @@ public class Robot extends IterativeRobot {
 		// spin opposite the motors on the left.
 		lDrive1.set(-left);
 		lDrive2.set(-left);
+
+	}
+    
+    public class DrivePIDOutput implements PIDOutput {
+
+		@Override
+		public void pidWrite(double output) {
+			SmartDashboard.putNumber("Drive PIDOutput", output);
+			lDrive1.set(-output);
+			lDrive2.set(-output);
+			rDrive1.set(output);
+			rDrive2.set(output);
+		}
 
 	}
    	
