@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.ADXL362;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.PIDController;
+import edu.wpi.first.wpilibj.DigitalInput;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -43,6 +44,7 @@ public class Robot extends IterativeRobot {
 	TalonSRX shooter;
 	ADXRS450_Gyro gyro;
 	ADXL362 accelerometer;
+	DigitalInput limitSwitch;
 	
 	ATM2016PIDController leftDrivingControl;
 	
@@ -60,7 +62,9 @@ public class Robot extends IterativeRobot {
 	double autoVelPrev;
 	double initTime;
 	
-	double motorSpeed = 0.0;
+	double shooterSpeed = 0.0;
+	double leftSpeed;
+	double rightSpeed;
 	boolean aButtonPressed = false;
 	boolean yButtonPressed = false;
 	boolean xButtonPressed = false;
@@ -81,6 +85,7 @@ public class Robot extends IterativeRobot {
     	rDrive1 = new VictorSP(2);
     	rDrive2 = new VictorSP(3);
     	shooter = new TalonSRX(4);
+    	limitSwitch = new DigitalInput(9);
     	
     	lDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
     	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
@@ -128,7 +133,7 @@ public class Robot extends IterativeRobot {
     		e.printStackTrace();
     	}
     	writeCSV("\nTimestamp, Left Encoder, Right Encoder, Left Speed, Right Speed, dT, L-Vel, L-Accel");
-    	//motorSpeed = prefs.getDouble("Speed", 0.0);
+    	//shooterSpeed = prefs.getDouble("Speed", 0.0);
     }
     
     public void autonomousInit() {
@@ -179,7 +184,7 @@ public class Robot extends IterativeRobot {
     	LiveWindow.setEnabled(false);
     	
     	//disable shooter motor
-    	motorSpeed = 0.0;
+    	shooterSpeed = 0.0;
     	
     	//reset gyro
     	gyro.calibrate();
@@ -190,22 +195,22 @@ public class Robot extends IterativeRobot {
     public void teleopPeriodic() {
     	
     	/*
-    	//if the A button is pressed, increase motorSpeed by 0.2
+    	//if the A button is pressed, increase shooterSpeed by 0.2
     	if(stick.getRawButton(2)) {
-    		if(!aButtonPressed && (motorSpeed < 1)){
+    		if(!aButtonPressed && (shooterSpeed < 1)){
     			aButtonPressed = true;
-    			motorSpeed+= 0.2;
+    			shooterSpeed+= 0.2;
     			
     		}
     	} else {
     		aButtonPressed= false;
     	}
     	
-    	//if the Y button is pressed, decrease motorSpeed by 0.2
+    	//if the Y button is pressed, decrease shooterSpeed by 0.2
     	if(stick.getRawButton(4)) {
-    		if(!yButtonPressed && (motorSpeed > -1)){
+    		if(!yButtonPressed && (shooterSpeed > -1)){
     			yButtonPressed = true;
-    			motorSpeed-= 0.2;
+    			shooterSpeed-= 0.2;
     		}
     	}
     	else {
@@ -214,10 +219,11 @@ public class Robot extends IterativeRobot {
     	*/
     	
     	//input speed from smart dashboard
-    	motorSpeed = SmartDashboard.getNumber("InputSpeed");
+    	shooterSpeed = SmartDashboard.getNumber("InputSpeed");
     	
     	//drive shooter motor
-    	shooter.set(motorSpeed);
+    	shooter.set(shooterSpeed);
+    	
     	
     	
     	//if the X button is pressed, use PID to drive 500 encoder ticks
@@ -257,7 +263,7 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//send data to Smart Dashboard
-    	SmartDashboard.putNumber("Speed", motorSpeed);
+    	SmartDashboard.putNumber("Speed", shooterSpeed);
     	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
     	SmartDashboard.putNumber("rDrive", rDrive1.getSpeed());
     	SmartDashboard.putNumber("Gyro Rotation", gyro.getAngle());
@@ -272,6 +278,14 @@ public class Robot extends IterativeRobot {
     	
     	//write data to .csv file
     	writeCSV("\n" + Timer.getFPGATimestamp() + ", " + lDriveEncoder.get() + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed());
+    	
+    	if(limitSwitch.get()){
+    		shooter.set(0.2);
+    	}
+    	else {
+    		shooter.set(0.0);
+    	}
+    	SmartDashboard.putBoolean("Limit Switch", limitSwitch.get());
     	
     }
     
