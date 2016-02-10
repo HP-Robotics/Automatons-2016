@@ -7,6 +7,11 @@
 /*----------------------------------------------------------------------------*/
 package org.usfirst.frc.team2823.robot;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.TimerTask;
 import java.util.LinkedList;
 
@@ -63,6 +68,12 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   Timer m_setpointTimer;
   private boolean m_freed = false;
   private boolean m_usingPercentTolerance;
+  
+  private File f;
+  private BufferedWriter bw;
+  private FileWriter fw;
+  
+  private boolean m_logEnabled = false;
 
   /**
    * Tolerance is the type of tolerance used to specify if the PID controller is
@@ -241,6 +252,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
    * initialization.
    */
   protected void calculate() {
+	  
     boolean enabled;
     PIDSource pidInput;
 
@@ -328,7 +340,14 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       }
 
       pidOutput.pidWrite(result);
+      
+      if(m_logEnabled) {
+      	writeCSV(Timer.getFPGATimestamp() + ", " + input + ", " + m_error + ", " + m_totalError , "PIDOutput");
+      	System.out.println("It work?");
+      }
+      
     }
+    
   }
 
   /**
@@ -765,6 +784,47 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       table.putBoolean("enabled", isEnable());
       table.addTableListener(listener, false);
     }
+  }
+  
+  public void enableLog() {
+	  try {
+  		f = new File("home/lvuser/PIDOutput.csv");
+  		
+  		if(!f.exists()) {
+  			f.createNewFile();
+  		}
+  		fw = new FileWriter(f);
+  		
+  	} catch(IOException e) {
+  		e.printStackTrace();
+  	}
+  	
+  	bw = new BufferedWriter(fw);
+  	
+  	try {
+  		bw.write("Team2823");
+  		bw.close();
+  		fw.close();
+  		
+  	} catch(IOException e) {
+  		e.printStackTrace();
+  	}
+  	
+  	m_logEnabled = true;
+  	
+  	//write headers to file
+  	writeCSV("Timestamp, Input, Error, Accumulated Error", "PIDOutput");
+	  
+  }
+  
+  //a copy of writeCSV from Robot.java, writes data to a csv file
+  private void writeCSV(Object data, String file) {
+  	try(PrintWriter csv = new PrintWriter(new BufferedWriter(new FileWriter("home/lvuser/" + file + ".csv", true)))) {
+  		csv.print(", " + data.toString());
+  		
+  	} catch(IOException e) {
+  		e.printStackTrace();
+  	}
   }
 
   /**

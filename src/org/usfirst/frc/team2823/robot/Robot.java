@@ -8,7 +8,8 @@ import edu.wpi.first.wpilibj.PIDOutput;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.SPI.Port;
-import edu.wpi.first.wpilibj.TalonSRX;
+import edu.wpi.first.wpilibj.Talon;
+import edu.wpi.first.wpilibj.CANTalon;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.communication.UsageReporting;
 import edu.wpi.first.wpilibj.communication.FRCNetworkCommunicationsLibrary.tInstances;
@@ -37,11 +38,14 @@ public class Robot extends IterativeRobot {
 	Joystick stick;
 	Encoder lDriveEncoder;
 	Encoder rDriveEncoder;
+	Encoder shooterEncoder;
 	VictorSP lDrive1;
 	VictorSP lDrive2;
 	VictorSP rDrive1;
 	VictorSP rDrive2;
-	TalonSRX shooter;
+	CANTalon arm;
+	Talon shooter;
+	Talon intake;
 	ADXRS450_Gyro gyro;
 	ADXL362 accelerometer;
 	DigitalInput limitSwitch;
@@ -63,12 +67,35 @@ public class Robot extends IterativeRobot {
 	double initTime;
 	
 	double shooterSpeed = 0.0;
+	double intakeSpeed = 0.0;
 	double leftSpeed;
 	double rightSpeed;
+	
 	boolean aButtonPressed = false;
 	boolean yButtonPressed = false;
 	boolean xButtonPressed = false;
+	boolean lBumperPressed = false;
+	boolean lTriggerPressed = false;
+	boolean rBumperPressed = false;
+	boolean rTriggerPressed = false;
 	boolean gyroDrive = false;
+	boolean tankDriveEnabled = true;
+	
+	class ToggleSwitch {
+		private boolean state = false;
+		private boolean previousState = false;
+		
+		public boolean switchEnabled() {
+			return state;
+		}
+		public void updateState(boolean btnState){
+			if(btnState && !previousState) {
+				state = !state;
+			}
+			
+			previousState = btnState;
+		}
+	}
 	
     public void robotInit() {
     	
@@ -84,13 +111,18 @@ public class Robot extends IterativeRobot {
     	lDrive2 = new VictorSP(1);
     	rDrive1 = new VictorSP(2);
     	rDrive2 = new VictorSP(3);
-    	shooter = new TalonSRX(4);
+    	shooter = new Talon(4);
+    	intake = new Talon(5);
+    	arm = new CANTalon(0);
+    	
     	limitSwitch = new DigitalInput(9);
     	
     	lDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
     	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
+    	shooterEncoder = new Encoder(4, 5, true, EncodingType.k4X);
     	
     	leftDrivingControl = new ATM2016PIDController(0.06, 0, 0, lDriveEncoder, new DrivePIDOutput());
+    	leftDrivingControl.enableLog();
     	
     	robot  = new RobotDrive(lDrive1, lDrive2, rDrive1, rDrive2);
     	
@@ -108,31 +140,16 @@ public class Robot extends IterativeRobot {
     	//reset encoders
     	lDriveEncoder.reset();
     	rDriveEncoder.reset();
+    	shooterEncoder.reset();
     	
     	//create .csv file to log data
-    	try {
-    		f = new File("home/lvuser/Output.csv");
-    		
-    		if(!f.exists()) {
-    			f.createNewFile();
-    		}
-    		fw = new FileWriter(f);
-    		
-    	} catch(IOException e) {
-    		e.printStackTrace();
-    	}
+    	createCSV("AutoOutput");
+    	createCSV("TeleopOutput");
     	
-    	bw = new BufferedWriter(fw);
+    	//write header to csv file
+    	writeCSV("\nTimestamp, Left Encoder, Right Encoder, Left Speed, Right Speed, dT, L-Vel, L-Accel", "TeleopOutput");
+    	writeCSV("\nTimestamp, Left Encoder, Right Encoder, Left Speed, Right Speed, dT, L-Vel, L-Accel", "AutoOutput");
     	
-    	try {
-    		bw.write("Team2823");
-    		bw.close();
-    		fw.close();
-    		
-    	} catch(IOException e) {
-    		e.printStackTrace();
-    	}
-    	writeCSV("\nTimestamp, Left Encoder, Right Encoder, Left Speed, Right Speed, dT, L-Vel, L-Accel");
     	//shooterSpeed = prefs.getDouble("Speed", 0.0);
     }
     
@@ -164,7 +181,7 @@ public class Robot extends IterativeRobot {
 				double V = (currentPos - autoPosPrev) / dT;
 				double A = (V - autoVelPrev) / dT;
 				
-				writeCSV("\n" + currentTime + ", " + currentPos + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed() + ", " + dT + ", " + V + ", " + A);
+				writeCSV("\n" + currentTime + ", " + currentPos + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed() + ", " + dT + ", " + V + ", " + A, "AutoOutput");
 				
 				//update previous time, position, velocity
 				autoTimePrev = currentTime;
@@ -183,56 +200,33 @@ public class Robot extends IterativeRobot {
     public void teleopInit() {
     	LiveWindow.setEnabled(false);
     	
-    	//disable shooter motor
+    	//disable shooter and intake motors
     	shooterSpeed = 0.0;
+    	intakeSpeed = 0.0;
     	
     	//reset gyro
     	gyro.calibrate();
-    	gyro.reset();
+    	
+    	// This will throw an exception if there is no Gyro and crash the robot.
+    	//   We need to add a try block around this, maybe in a quick function to wrap it
+    	//gyroReset();
     
     }
     
     public void teleopPeriodic() {
-    	
-    	/*
-    	//if the A button is pressed, increase shooterSpeed by 0.2
-    	if(stick.getRawButton(2)) {
-    		if(!aButtonPressed && (shooterSpeed < 1)){
-    			aButtonPressed = true;
-    			shooterSpeed+= 0.2;
-    			
-    		}
-    	} else {
-    		aButtonPressed= false;
-    	}
-    	
-    	//if the Y button is pressed, decrease shooterSpeed by 0.2
-    	if(stick.getRawButton(4)) {
-    		if(!yButtonPressed && (shooterSpeed > -1)){
-    			yButtonPressed = true;
-    			shooterSpeed-= 0.2;
-    		}
-    	}
-    	else {
-    		yButtonPressed= false;
-    	}
-    	*/
-    	
     	//input speed from smart dashboard
-    	shooterSpeed = SmartDashboard.getNumber("InputSpeed");
-    	
-    	//drive shooter motor
-    	shooter.set(shooterSpeed);
-    	
+    	arm.set(SmartDashboard.getNumber("InputSpeed"));
     	
     	
     	//if the X button is pressed, use PID to drive 500 encoder ticks
-    	/*if(stick.getRawButton(1)) {
+    	if(stick.getRawButton(1)) {
     		if(!xButtonPressed){
     			xButtonPressed = true;
     			
     			leftDrivingControl.enable();
     			leftDrivingControl.setSetpoint(lDriveEncoder.get() + 500);
+    			
+    			tankDriveEnabled = false;
     			
     		}
     	} else {
@@ -240,26 +234,21 @@ public class Robot extends IterativeRobot {
     		xButtonPressed = false;
     		
     		leftDrivingControl.disable();
-    		driveRobot(stick.getRawAxis(1)* -0.75, stick.getRawAxis(3)* -0.75);
     		
-    	}*/
+    		tankDriveEnabled = true;
+    		
+    	}
     	
-    	if((stick.getPOV() >= 0 && stick.getPOV() <= 45) || (stick.getPOV()>=315)) {
-    		goNow(0.7, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.5, 0.5);
-    		if(!gyroDrive){
-    			gyro.reset();
-    			gyroDrive = true;
-    		}
-    		
-    	} else if(stick.getPOV() >= 135 && stick.getPOV()<= 225) {
-    		goNow(-0.7, gyro.getAngle() * SmartDashboard.getNumber("k_angle"), -0.5, 0.5);
-    		if(!gyroDrive){
-    			gyro.reset();
-    			gyroDrive = true;
-    		}
-    	} else {
+    	//calculate motor speeds
+    	setIntakeSpeed();
+    	setShooterSpeed();
+    	
+    	//drive motors using calculated speeds
+    	shooter.set(shooterSpeed);
+    	intake.set(intakeSpeed);
+    	goGyro();
+    	if(tankDriveEnabled){
     		driveRobot(stick.getRawAxis(1)* -0.75, stick.getRawAxis(3)* -0.75);
-    		gyroDrive = false;
     	}
     	
     	//send data to Smart Dashboard
@@ -272,21 +261,15 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Z Acceleration", accelerometer.getZ());
     	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
     	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
+    	SmartDashboard.putNumber("Shooter Encoder", shooterEncoder.get());
+    	SmartDashboard.putNumber("Arm Encoder", arm.getEncPosition());
+    	SmartDashboard.putBoolean("Limit Switch", limitSwitch.get());
     	
     	//update PID constants to Smart Dashboard values
     	leftDrivingControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"));
     	
     	//write data to .csv file
-    	writeCSV("\n" + Timer.getFPGATimestamp() + ", " + lDriveEncoder.get() + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed());
-    	
-    	if(limitSwitch.get()){
-    		shooter.set(0.2);
-    	}
-    	else {
-    		shooter.set(0.0);
-    	}
-    	SmartDashboard.putBoolean("Limit Switch", limitSwitch.get());
-    	
+    	writeCSV("\n" + Timer.getFPGATimestamp() + ", " + lDriveEncoder.get() + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed(), "TeleopOutput");
     }
     
     public void testPeriodic() {
@@ -294,9 +277,35 @@ public class Robot extends IterativeRobot {
     }
     
     //function to write data to a .csv file
-    public void writeCSV(Object data) {
-    	try(PrintWriter csv = new PrintWriter(new BufferedWriter(new FileWriter("home/lvuser/Output.csv", true)))) {
+    public void writeCSV(Object data, String file) {
+    	try(PrintWriter csv = new PrintWriter(new BufferedWriter(new FileWriter("home/lvuser/" + file + ".csv", true)))) {
     		csv.print(", " + data.toString());
+    		
+    	} catch(IOException e) {
+    		e.printStackTrace();
+    	}
+    }
+    
+    //function to create a file
+    public void createCSV(String file) {
+    	try {
+    		f = new File("home/lvuser/" + file + ".csv");
+    		
+    		if(!f.exists()) {
+    			f.createNewFile();
+    		}
+    		fw = new FileWriter(f);
+    		
+    	} catch(IOException e) {
+    		e.printStackTrace();
+    	}
+    	
+    	bw = new BufferedWriter(fw);
+    	
+    	try {
+    		bw.write("Team2823");
+    		bw.close();
+    		fw.close();
     		
     	} catch(IOException e) {
     		e.printStackTrace();
@@ -305,14 +314,64 @@ public class Robot extends IterativeRobot {
     
     //function to tank-drive robot given speed values
     public void driveRobot(double left, double right) {
-		rDrive1.set(-right);
-		rDrive2.set(-right);
-		// Values are multiplied by -1 to ensure that the motors on the right
-		// spin opposite the motors on the left.
-		lDrive1.set(left);
-		lDrive2.set(left);
+			rDrive1.set(-right);
+			rDrive2.set(-right);
+			// Values are multiplied by -1 to ensure that the motors on the right
+			// spin opposite the motors on the left.
+			lDrive1.set(left);
+			lDrive2.set(left);
+    	
 
 	}
+    
+    public void setIntakeSpeed() {
+    	//if the left trigger (bottom) is pressed, decrease intakeSpeed by 0.2
+    	if(stick.getRawButton(7)) {
+    		if(!lTriggerPressed && (shooterSpeed > -1)){
+    			lTriggerPressed = true;
+    			intakeSpeed -= 0.2;
+    			
+    		}
+    	} else {
+    		lTriggerPressed = false;
+    	}
+    	
+    	//if the left bumper (top) is pressed, increase intakeSpeed by 0.2
+    	if(stick.getRawButton(5)) {
+    		if(!lBumperPressed && (shooterSpeed < 1)){
+    			lBumperPressed = true;
+    			intakeSpeed += 0.2;
+    		}
+    	}
+    	else {
+    		lBumperPressed = false;
+    	}
+    }
+    
+    public void setShooterSpeed() {
+    	
+    	//if the right trigger (bottom) is pressed, decrease shooterSpeed by 0.2
+    	if(stick.getRawButton(8)) {
+    		if(!rTriggerPressed && (shooterSpeed > -1)){
+    			rTriggerPressed = true;
+    			shooterSpeed -= 0.2;
+    			
+    		}
+    	} else {
+    		rTriggerPressed = false;
+    	}
+    	
+    	//if the right bumper (top) is pressed, increase shooterSpeed by 0.2
+    	if(stick.getRawButton(6)) {
+    		if(!rBumperPressed && (shooterSpeed < 1)){
+    			rBumperPressed = true;
+    			shooterSpeed += 0.2;
+    		}
+    	}
+    	else {
+    		rBumperPressed = false;
+    	}
+    }
     
     public class DrivePIDOutput implements PIDOutput {
 
@@ -357,5 +416,34 @@ public class Robot extends IterativeRobot {
         }
         driveRobot(leftOutput, rightOutput);
       }
+    public void gyroReset() {
+    	try{
+    		gyro.reset();
+    	}catch(Exception e) {
+    		System.out.println("Gyro not work");
+    	}
+    	
+    }
+    public void goGyro (){
+    	if((stick.getPOV() >= 0 && stick.getPOV() <= 45) || (stick.getPOV()>=315)) {
+    		goNow(0.7, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.5, 0.5);
+    		if(!gyroDrive){
+    			gyroReset();
+    			gyroDrive = true;
+    			tankDriveEnabled = false;
+    		}
+    		
+    	} else if(stick.getPOV() >= 135 && stick.getPOV()<= 225) {
+    		goNow(-0.7, gyro.getAngle() * SmartDashboard.getNumber("k_angle"), -0.5, 0.5);
+    		if(!gyroDrive){
+    			gyroReset();
+    			gyroDrive = true;
+    			tankDriveEnabled = false;
+    		}
+    	} else {
+    		tankDriveEnabled = true;
+    		gyroDrive = false;
+    	}
+    }
    	
  }
