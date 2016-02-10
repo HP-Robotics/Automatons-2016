@@ -219,7 +219,7 @@ public class Robot extends IterativeRobot {
     	
     	
     	//if the X button is pressed, use PID to drive 500 encoder ticks
-    	if(stick.getRawButton(1)) {
+    	/*if(stick.getRawButton(1)) {
     		if(!xButtonPressed){
     			xButtonPressed = true;
     			
@@ -237,7 +237,7 @@ public class Robot extends IterativeRobot {
     		
     		tankDriveEnabled = true;
     		
-    	}
+    	}*/
     	
     	//calculate motor speeds
     	setIntakeSpeed();
