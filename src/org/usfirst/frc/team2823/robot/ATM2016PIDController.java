@@ -69,9 +69,9 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   private boolean m_freed = false;
   private boolean m_usingPercentTolerance;
   
-  private File f;
-  private BufferedWriter bw;
-  private FileWriter fw;
+  private File m_f;
+  private BufferedWriter m_bw;
+  private FileWriter m_fw;
   
   private boolean m_logEnabled = false;
 
@@ -342,8 +342,12 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       pidOutput.pidWrite(result);
       
       if(m_logEnabled) {
-      	writeCSV(Timer.getFPGATimestamp() + ", " + input + ", " + m_error + ", " + m_totalError , "PIDOutput");
-      	System.out.println("It work?");
+    	  try{
+    		  m_bw.write(Timer.getFPGATimestamp() + ", " + input + ", " + m_error + ", " + m_totalError + ", " + result + "\n");
+    		  
+    	  } catch(IOException e) {
+    		  m_logEnabled = false;
+    	  }
       }
       
     }
@@ -786,45 +790,40 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     }
   }
   
-  public void enableLog() {
+  public void enableLog(String file) {
 	  try {
-  		f = new File("home/lvuser/PIDOutput.csv");
+  		m_f = new File("home/lvuser/" + file);
   		
-  		if(!f.exists()) {
-  			f.createNewFile();
+  		if(!m_f.exists()) {
+  			m_f.createNewFile();
   		}
-  		fw = new FileWriter(f);
+  		m_fw = new FileWriter(m_f);
   		
   	} catch(IOException e) {
   		e.printStackTrace();
   	}
   	
-  	bw = new BufferedWriter(fw);
+  	m_bw = new BufferedWriter(m_fw);
   	
   	try {
-  		bw.write("Team2823");
-  		bw.close();
-  		fw.close();
+  		m_bw.write("Timestamp, Input, Error, Accumulated Error, Calculated Output\n");
+  		
+  		m_logEnabled = true;
   		
   	} catch(IOException e) {
   		e.printStackTrace();
   	}
-  	
-  	m_logEnabled = true;
-  	
-  	//write headers to file
-  	writeCSV("Timestamp, Input, Error, Accumulated Error", "PIDOutput");
 	  
   }
   
-  //a copy of writeCSV from Robot.java, writes data to a csv file
-  private void writeCSV(Object data, String file) {
-  	try(PrintWriter csv = new PrintWriter(new BufferedWriter(new FileWriter("home/lvuser/" + file + ".csv", true)))) {
-  		csv.print(", " + data.toString());
-  		
-  	} catch(IOException e) {
-  		e.printStackTrace();
-  	}
+  public void closeLog() {
+	  try {
+		  m_bw.close();
+		  m_fw.close();
+		  
+	  } catch(IOException e) {
+		  
+	  }
   }
 
   /**

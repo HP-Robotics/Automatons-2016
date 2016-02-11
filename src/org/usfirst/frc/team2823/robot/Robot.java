@@ -5,23 +5,17 @@ import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PIDOutput;
-import edu.wpi.first.wpilibj.Preferences;
-import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.PIDSourceType;
 import edu.wpi.first.wpilibj.SPI.Port;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.CANTalon;
 import edu.wpi.first.wpilibj.VictorSP;
-import edu.wpi.first.wpilibj.communication.UsageReporting;
-import edu.wpi.first.wpilibj.communication.FRCNetworkCommunicationsLibrary.tInstances;
-import edu.wpi.first.wpilibj.communication.FRCNetworkCommunicationsLibrary.tResourceType;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.ADXL362;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
-import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.DigitalInput;
 
 import java.io.BufferedWriter;
@@ -29,9 +23,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 
 public class Robot extends IterativeRobot {
 	//create objects
@@ -43,17 +34,15 @@ public class Robot extends IterativeRobot {
 	VictorSP lDrive2;
 	VictorSP rDrive1;
 	VictorSP rDrive2;
-	CANTalon arm;
+	//CANTalon arm;
 	Talon shooter;
 	Talon intake;
 	ADXRS450_Gyro gyro;
 	ADXL362 accelerometer;
 	DigitalInput limitSwitch;
 	
-	ATM2016PIDController leftDrivingControl;
-	
-	RobotDrive robot;
-	
+	ATM2016PIDController shooterSpeedControl;
+	ATM2016PIDController turnControl;
 	
 	File f;
 	BufferedWriter bw;
@@ -81,22 +70,48 @@ public class Robot extends IterativeRobot {
 	boolean gyroDrive = false;
 	boolean tankDriveEnabled = true;
 	
-	class ToggleSwitch {
+	ToggleSwitch pidState;
+	
+	/* this class tracks a mode switch. i.e. press X to switch
+	 * to PID drive, press again to switch back to tank drive */
+	static class ToggleSwitch {
 		private boolean state = false;
 		private boolean previousState = false;
 		
+		/* return whether the mode switch is enabled */
 		public boolean switchEnabled() {
 			return state;
 		}
-		public void updateState(boolean btnState){
-			if(btnState && !previousState) {
+		
+		/* update the mode switch based on this tick's controller button state.
+		 * returns whether the state changed */
+		public boolean updateState(boolean btnState){
+			boolean stateChanged = false;
+			
+			if(btnState && (btnState != previousState)) {
 				state = !state;
+				stateChanged = true;
 			}
 			
 			previousState = btnState;
+			
+			return stateChanged;
 		}
 	}
-	
+	/*
+	public static void main(String[] blah)
+	{
+		System.out.println("hi");
+		ToggleSwitch s = new ToggleSwitch();
+		System.out.println("enabled:" + s.switchEnabled());
+		boolean b = s.updateState(true);
+		System.out.println("switched: " + b);
+		System.out.println("enabled:" + s.switchEnabled());
+		b = s.updateState(false);
+		System.out.println("switched: " + b);
+		System.out.println("enabled:" + s.switchEnabled());
+	}
+	*/
     public void robotInit() {
     	
     	//create USB camera
@@ -113,7 +128,7 @@ public class Robot extends IterativeRobot {
     	rDrive2 = new VictorSP(3);
     	shooter = new Talon(4);
     	intake = new Talon(5);
-    	arm = new CANTalon(0);
+    	//arm = new CANTalon(0);
     	
     	limitSwitch = new DigitalInput(9);
     	
@@ -121,21 +136,28 @@ public class Robot extends IterativeRobot {
     	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
     	shooterEncoder = new Encoder(4, 5, true, EncodingType.k4X);
     	
-    	leftDrivingControl = new ATM2016PIDController(0.06, 0, 0, lDriveEncoder, new DrivePIDOutput());
-    	leftDrivingControl.enableLog();
+    	pidState = new ToggleSwitch();
     	
-    	robot  = new RobotDrive(lDrive1, lDrive2, rDrive1, rDrive2);
+    	shooterEncoder.setPIDSourceType(PIDSourceType.kRate);
+    	shooterEncoder.setReverseDirection(true);
+    	
+    	//create gyro and accelerometer
+    	gyro = new ADXRS450_Gyro(Port.kOnboardCS0);
+    	accelerometer = new ADXL362(ADXL362.Range.k2G);
+    	
+    	//calibrate gyro
+    	gyro.calibrate();
+    	
+    	shooterSpeedControl = new ATM2016PIDController(0.0, 0.0, 0.0, 0.0, shooterEncoder, lDrive1);
+    	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroPIDOutput());
     	
     	SmartDashboard.putNumber("InputSpeed", 0.0);
     	SmartDashboard.putNumber("P", 0.0);
     	SmartDashboard.putNumber("I", 0.0);
     	SmartDashboard.putNumber("D", 0.0);
+    	SmartDashboard.putNumber("F", 0.0);
     	SmartDashboard.putNumber("k_angle", 0.1);
     	SmartDashboard.putNumber("k_sensitivity", 0.5);
-    	
-    	//create gyro and accelerometer
-    	gyro = new ADXRS450_Gyro(Port.kOnboardCS0);
-    	accelerometer = new ADXL362(ADXL362.Range.k2G);
     	
     	//reset encoders
     	lDriveEncoder.reset();
@@ -204,44 +226,46 @@ public class Robot extends IterativeRobot {
     	shooterSpeed = 0.0;
     	intakeSpeed = 0.0;
     	
-    	//reset gyro
-    	gyro.calibrate();
-    	
     	// This will throw an exception if there is no Gyro and crash the robot.
     	//   We need to add a try block around this, maybe in a quick function to wrap it
-    	//gyroReset();
+    	gyroReset();
     
     }
     
     public void teleopPeriodic() {
-    	//input speed from smart dashboard
-    	arm.set(SmartDashboard.getNumber("InputSpeed"));
-    	
     	
     	//if the X button is pressed, use PID to drive 500 encoder ticks
-    	/*if(stick.getRawButton(1)) {
-    		if(!xButtonPressed){
-    			xButtonPressed = true;
-    			
-    			leftDrivingControl.enable();
-    			leftDrivingControl.setSetpoint(lDriveEncoder.get() + 500);
+    	if(pidState.updateState(stick.getRawButton(1))) {
+    		System.out.println("Updated button");
+    		if(pidState.switchEnabled()) {
+    			System.out.println("PID should be on");
+    			shooterSpeedControl.enableLog("ShooterPID.csv");
+    			shooterSpeedControl.enable();
+    			shooterSpeedControl.setSetpoint(10000);
     			
     			tankDriveEnabled = false;
     			
+    		} else {
+    			System.out.println("PID should be off");
+    			shooterSpeedControl.disable();
+    			shooterSpeedControl.reset();
+        		shooterSpeedControl.closeLog();
+    			
+        		tankDriveEnabled = true;
+        		
     		}
-    	} else {
-    		//otherwise disable PID and drive robot with joystick values
-    		xButtonPressed = false;
-    		
-    		leftDrivingControl.disable();
-    		
-    		tankDriveEnabled = true;
-    		
-    	}*/
+    	}
+    	
+    	if(shooterSpeedControl.isEnabled()) {
+    		SmartDashboard.putNumber("Error", shooterSpeedControl.getAvgError());
+    	}
     	
     	//calculate motor speeds
     	setIntakeSpeed();
     	setShooterSpeed();
+    	
+    	//input speed from smart dashboard
+    	//arm.set(SmartDashboard.getNumber("InputSpeed"));
     	
     	//drive motors using calculated speeds
     	shooter.set(shooterSpeed);
@@ -262,11 +286,12 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
     	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
     	SmartDashboard.putNumber("Shooter Encoder", shooterEncoder.get());
-    	SmartDashboard.putNumber("Arm Encoder", arm.getEncPosition());
+    	//SmartDashboard.putNumber("Arm Encoder", arm.getEncPosition());
     	SmartDashboard.putBoolean("Limit Switch", limitSwitch.get());
     	
     	//update PID constants to Smart Dashboard values
-    	leftDrivingControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"));
+    	//shooterSpeedControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
+    	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"));
     	
     	//write data to .csv file
     	writeCSV("\n" + Timer.getFPGATimestamp() + ", " + lDriveEncoder.get() + ", " + rDriveEncoder.get() + ", " + lDrive1.getSpeed() + ", " + rDrive1.getSpeed(), "TeleopOutput");
@@ -385,6 +410,19 @@ public class Robot extends IterativeRobot {
 		}
 
 	}
+    
+    public class GyroPIDOutput implements PIDOutput {
+
+		@Override
+		public void pidWrite(double output) {
+			SmartDashboard.putNumber("Gyro PIDOutput", output);
+			lDrive1.set(output);
+			lDrive2.set(output);
+			rDrive1.set(output);
+			rDrive2.set(output);
+		}
+	}
+    
     public void goNow(double outputMagnitude, double curve, double minimum, double sensitivity) {
         double leftOutput, rightOutput;
         
@@ -440,9 +478,33 @@ public class Robot extends IterativeRobot {
     			gyroDrive = true;
     			tankDriveEnabled = false;
     		}
-    	} else {
+    	} else if(stick.getPOV() == 90) {
+    		if(!gyroDrive){
+    			gyroReset();
+    			turnControl.setSetpoint(90);
+    			turnControl.enableLog("TurnPID.csv");
+    			turnControl.enable();
+    			
+    			gyroDrive = true;
+    			tankDriveEnabled = false;
+    		}
+    	} else if(stick.getPOV() == 270) {
+    		if(!gyroDrive){
+    			gyroReset();
+    			turnControl.setSetpoint(-90);
+    			turnControl.enableLog("TurnPID.csv");
+    			turnControl.enable();
+    			
+    			gyroDrive = true;
+    			tankDriveEnabled = false;
+    		}
+    	} else if(gyroDrive) {
     		tankDriveEnabled = true;
     		gyroDrive = false;
+    		
+    		turnControl.disable();
+    		turnControl.closeLog();
+    		turnControl.reset();
     	}
     }
    	
