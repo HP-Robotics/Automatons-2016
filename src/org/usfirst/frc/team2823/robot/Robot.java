@@ -153,10 +153,10 @@ public class Robot extends IterativeRobot {
     	//calibrate gyro
     	gyro.calibrate();
     	
-    	shooterSpeedControl = new ATM2016PIDController(0.0, 0.0, 0.0, 0.0, shooterEncoder, lDrive1, 10);
+    	shooterSpeedControl = new ATM2016PIDController(0.008, 0.00000001, 0.0005, 0.00006, shooterEncoder, shooter, 0.01);
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroPIDOutput());
     	
-    	SmartDashboard.putNumber("InputSpeed", 0.0);
+    	SmartDashboard.putNumber("InputShooterSpeed", 500);
     	SmartDashboard.putNumber("P", 0.0);
     	SmartDashboard.putNumber("I", 0.0);
     	SmartDashboard.putNumber("D", 0.0);
@@ -249,7 +249,7 @@ public class Robot extends IterativeRobot {
     			System.out.println("PID should be on");
     			shooterSpeedControl.enableLog("ShooterPID.csv");
     			shooterSpeedControl.enable();
-    			shooterSpeedControl.setSetpoint(10000);
+    			shooterSpeedControl.setSetpoint(SmartDashboard.getNumber("InputShooterSpeed"));
     			
     			tankDriveEnabled = false;
     			
@@ -293,8 +293,8 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//calculate motor speeds
-    	//setIntakeSpeed();
-    	setShooterSpeed();
+    	setIntakeSpeed();
+    	//setShooterSpeed();
     	
     	//input speed from smart dashboard
     	arm.set(SmartDashboard.getNumber("arm"));

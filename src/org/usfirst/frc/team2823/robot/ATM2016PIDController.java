@@ -69,6 +69,11 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   private boolean m_freed = false;
   private boolean m_usingPercentTolerance;
   
+  private double m_POutput;
+  private double m_IOutput;
+  private double m_DOutput;
+  private double m_FOutput;
+  
   private File m_f;
   private BufferedWriter m_bw;
   private FileWriter m_fw;
@@ -251,8 +256,9 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
    * This should only be called by the PIDTask and is created during
    * initialization.
    */
+  //TODO Calculate 
   protected void calculate() {
-	  
+	
     boolean enabled;
     PIDSource pidInput;
 
@@ -301,6 +307,11 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 
             m_result = m_P * m_totalError + m_D * m_error +
                        calculateFeedForward();
+            
+            m_POutput = m_P * m_totalError;
+            m_IOutput = 0.0;
+            m_DOutput = m_D * m_error;
+            m_FOutput = calculateFeedForward();
           }
         }
         else {
@@ -319,6 +330,11 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 
           m_result = m_P * m_error + m_I * m_totalError +
                      m_D * (m_error - m_prevError) + calculateFeedForward();
+          
+          m_POutput = m_P * m_error;
+          m_IOutput = m_I * m_totalError;
+          m_DOutput = m_D * (m_error - m_prevError);
+          m_FOutput = calculateFeedForward();
         }
         m_prevError = m_error;
 
@@ -343,9 +359,11 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       
       if(m_logEnabled) {
     	  try{
-    		  m_bw.write(Timer.getFPGATimestamp() + ", " + input + ", " + m_error + ", " + m_totalError + ", " + result + "\n");
+    		  m_bw.write(Timer.getFPGATimestamp() + ", " + input + ", " + m_error + ", " + m_totalError + ", " + result + 
+    				  			", " + m_POutput + ", " + m_IOutput + ", " + m_DOutput + ", " + m_FOutput + "\n");
     		  
     	  } catch(IOException e) {
+    		  System.out.println("It catch");
     		  m_logEnabled = false;
     	  }
       }
@@ -790,6 +808,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     }
   }
   
+  //TODO This is the enableLog function
   public void enableLog(String file) {
 	  try {
   		m_f = new File("home/lvuser/" + file);
@@ -806,7 +825,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   	m_bw = new BufferedWriter(m_fw);
   	
   	try {
-  		m_bw.write("Timestamp, Input, Error, Accumulated Error, Calculated Output\n");
+  		m_bw.write("Timestamp, Input, Error, Accumulated Error, Calculated Output, P: " + m_P + ", I: " + m_I +  ", D: " + m_D + ", F: " + m_F + "\n" );
   		
   		m_logEnabled = true;
   		
