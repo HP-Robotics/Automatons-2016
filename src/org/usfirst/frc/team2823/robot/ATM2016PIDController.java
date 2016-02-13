@@ -329,7 +329,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
           }
 
           m_result = m_P * m_error + m_I * m_totalError +
-                     m_D * (m_error - m_prevError) + calculateFeedForward();
+                     m_D * (m_error - m_prevError);// + calculateFeedForward();
           
           m_POutput = m_P * m_error;
           m_IOutput = m_I * m_totalError;
@@ -563,6 +563,13 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       table.putNumber("setpoint", m_setpoint);
   }
 
+  public void setSetpointInRPMs(double setpointRPMs) {
+	  double setpoint = setpointRPMs * (2048.0/60.0);
+	  
+	  setSetpoint(setpoint);
+	  
+  }
+  
   /**
    * Returns the current setpoint of the PIDController
    *$

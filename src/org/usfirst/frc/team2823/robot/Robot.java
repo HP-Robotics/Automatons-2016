@@ -1,7 +1,6 @@
 package org.usfirst.frc.team2823.robot;
 
 //import edu.wpi.first.wpilibj.CameraServer;
-import edu.wpi.first.wpilibj.Counter;
 import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
@@ -12,6 +11,7 @@ import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.CANTalon;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
+import edu.wpi.first.wpilibj.networktables.NetworkTable;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -141,6 +141,7 @@ public class Robot extends IterativeRobot {
     	shooterCounter = new ATM2016Counter();
     	shooterCounter.setUpSource(6);
     	shooterCounter.setUpSourceEdge(true, false);
+    	shooterCounter.setPIDSourceType(PIDSourceType.kDisplacement);
     	
     	lDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
     	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
@@ -160,10 +161,10 @@ public class Robot extends IterativeRobot {
     	//calibrate gyro
     	gyro.calibrate();
     	
-    	shooterSpeedControl = new ATM2016PIDController(0.008, 0.00000001, 0.0005, 0.00006, shooterEncoder, shooter, 0.01);
+    	shooterSpeedControl = new ATM2016PIDController(0.0, 0.0, 0.0, 0.0, shooterCounter, shooter, 0.01);
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroPIDOutput());
     	
-    	SmartDashboard.putNumber("InputShooterSpeed", 500);
+    	SmartDashboard.putNumber("InputShooterSpeed", 2);
     	SmartDashboard.putNumber("P", 0.0);
     	SmartDashboard.putNumber("I", 0.0);
     	SmartDashboard.putNumber("D", 0.0);
@@ -250,14 +251,17 @@ public class Robot extends IterativeRobot {
     
     public void teleopPeriodic() {
     	
+    	//get PIDF values
+    	shooterSpeedControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
+    	
     	//if the X button is pressed, use PID to drive 500 encoder ticks
     	if(pidState.updateState(stick.getRawButton(1))) {
     		System.out.println("Updated button");
     		if(pidState.switchEnabled()) {
     			System.out.println("PID should be on");
-    			shooterSpeedControl.enableLog("ShooterPID.csv");
+    			shooterSpeedControl.enableLog("ShootPID.csv");
     			shooterSpeedControl.enable();
-    			shooterSpeedControl.setSetpoint(SmartDashboard.getNumber("InputShooterSpeed"));
+    			shooterSpeedControl.setSetpointInRPMs(SmartDashboard.getNumber("InputShooterSpeed"));
     			
     			tankDriveEnabled = false;
     			
@@ -330,10 +334,9 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Arm Encoder", arm.getEncPosition());
     	SmartDashboard.putBoolean("Limit Switch", limitSwitch.get());
     	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
-    	SmartDashboard.putNumber("Shooter Counter Rate", shooterCounter.getRate());
+    	SmartDashboard.putNumber("Shooter Counter Rate", shooterCounter.getRateInRPMs());
     	
     	//update PID constants to Smart Dashboard values
-    	//shooterSpeedControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
     	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"));
     	
     	//write data to .csv file

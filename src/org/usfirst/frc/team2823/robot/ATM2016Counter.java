@@ -1,6 +1,7 @@
 package org.usfirst.frc.team2823.robot;
 
 import edu.wpi.first.wpilibj.Counter;
+import edu.wpi.first.wpilibj.Timer;
 
 /**
  * Class for counting the number of ticks on a digital input channel. This is a
@@ -13,13 +14,27 @@ import edu.wpi.first.wpilibj.Counter;
  */
 public class ATM2016Counter extends Counter {
 	private double m_previousCount = 0;
+	private double m_previousTime = Timer.getFPGATimestamp();
 	
 	@Override public double getRate() {
 		double rate;
+		double count = get();
+		double time = Timer.getFPGATimestamp();
 		
-		rate = (get() - m_previousCount) / getPeriod();
+		rate = (count - m_previousCount) / (time - m_previousTime);
+		
+		m_previousCount = count;
+		m_previousTime = time;
 		
 		return rate;
 		
+	}
+	
+	@Override public double pidGet() {
+		return getRate();
+	}
+	
+	public double getRateInRPMs() {
+		return (getRate() * (60.0/2048.0));
 	}
 }
