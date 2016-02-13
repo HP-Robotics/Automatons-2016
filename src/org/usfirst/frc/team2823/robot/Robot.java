@@ -1,6 +1,7 @@
 package org.usfirst.frc.team2823.robot;
 
 //import edu.wpi.first.wpilibj.CameraServer;
+import edu.wpi.first.wpilibj.Counter;
 import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
@@ -40,6 +41,7 @@ public class Robot extends IterativeRobot {
 	ADXRS450_Gyro gyro;
 	ADXL362 accelerometer;
 	DigitalInput limitSwitch;
+	ATM2016Counter shooterCounter;
 	
 	ATM2016PIDController shooterSpeedControl;
 	ATM2016PIDController turnControl;
@@ -101,6 +103,7 @@ public class Robot extends IterativeRobot {
 			return stateChanged;
 		}
 	}
+	
 	/*
 	public static void main(String[] blah)
 	{
@@ -135,6 +138,10 @@ public class Robot extends IterativeRobot {
     	
     	limitSwitch = new DigitalInput(9);
     	
+    	shooterCounter = new ATM2016Counter();
+    	shooterCounter.setUpSource(6);
+    	shooterCounter.setUpSourceEdge(true, false);
+    	
     	lDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
     	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
     	shooterEncoder = new Encoder(4, 5, true, EncodingType.k4X);
@@ -164,6 +171,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("k_angle", 0.1);
     	SmartDashboard.putNumber("k_sensitivity", 0.5);
     	SmartDashboard.putNumber("arm", 0);
+    	
     	
     	//reset encoders
     	lDriveEncoder.reset();
@@ -321,6 +329,8 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Shooter Encoder", shooterEncoder.get());
     	SmartDashboard.putNumber("Arm Encoder", arm.getEncPosition());
     	SmartDashboard.putBoolean("Limit Switch", limitSwitch.get());
+    	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
+    	SmartDashboard.putNumber("Shooter Counter Rate", shooterCounter.getRate());
     	
     	//update PID constants to Smart Dashboard values
     	//shooterSpeedControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
