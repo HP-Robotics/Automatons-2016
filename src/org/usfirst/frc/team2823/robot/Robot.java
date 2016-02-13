@@ -34,7 +34,7 @@ public class Robot extends IterativeRobot {
 	VictorSP lDrive2;
 	VictorSP rDrive1;
 	VictorSP rDrive2;
-	//CANTalon arm;
+	CANTalon arm;
 	Talon shooter;
 	Talon intake;
 	ADXRS450_Gyro gyro;
@@ -69,8 +69,11 @@ public class Robot extends IterativeRobot {
 	boolean rTriggerPressed = false;
 	boolean gyroDrive = false;
 	boolean tankDriveEnabled = true;
+	boolean intakeEnabled = false;
 	
 	ToggleSwitch pidState;
+	ToggleSwitch intakeState;
+	ToggleSwitch intakeEnableState;
 	
 	/* this class tracks a mode switch. i.e. press X to switch
 	 * to PID drive, press again to switch back to tank drive */
@@ -128,7 +131,7 @@ public class Robot extends IterativeRobot {
     	rDrive2 = new VictorSP(3);
     	shooter = new Talon(4);
     	intake = new Talon(5);
-    	//arm = new CANTalon(0);
+    	arm = new CANTalon(0);
     	
     	limitSwitch = new DigitalInput(9);
     	
@@ -137,6 +140,8 @@ public class Robot extends IterativeRobot {
     	shooterEncoder = new Encoder(4, 5, true, EncodingType.k4X);
     	
     	pidState = new ToggleSwitch();
+    	intakeState = new ToggleSwitch();
+    	intakeEnableState = new ToggleSwitch();
     	
     	shooterEncoder.setPIDSourceType(PIDSourceType.kRate);
     	shooterEncoder.setReverseDirection(true);
@@ -148,7 +153,7 @@ public class Robot extends IterativeRobot {
     	//calibrate gyro
     	gyro.calibrate();
     	
-    	shooterSpeedControl = new ATM2016PIDController(0.0, 0.0, 0.0, 0.0, shooterEncoder, lDrive1);
+    	shooterSpeedControl = new ATM2016PIDController(0.0, 0.0, 0.0, 0.0, shooterEncoder, lDrive1, 10);
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroPIDOutput());
     	
     	SmartDashboard.putNumber("InputSpeed", 0.0);
@@ -158,6 +163,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("F", 0.0);
     	SmartDashboard.putNumber("k_angle", 0.1);
     	SmartDashboard.putNumber("k_sensitivity", 0.5);
+    	SmartDashboard.putNumber("arm", 0);
     	
     	//reset encoders
     	lDriveEncoder.reset();
@@ -226,6 +232,8 @@ public class Robot extends IterativeRobot {
     	shooterSpeed = 0.0;
     	intakeSpeed = 0.0;
     	
+    	arm.enable();
+    	
     	// This will throw an exception if there is no Gyro and crash the robot.
     	//   We need to add a try block around this, maybe in a quick function to wrap it
     	gyroReset();
@@ -260,12 +268,37 @@ public class Robot extends IterativeRobot {
     		SmartDashboard.putNumber("Error", shooterSpeedControl.getAvgError());
     	}
     	
+    	
+    	if(intakeState.updateState(stick.getRawButton(5))&&intakeEnabled) {
+    		System.out.println("Updated button");
+    		if(intakeState.switchEnabled()) {
+    			intakeSpeed = -0.8;
+    			
+    		} else {
+    			intakeSpeed = 0.8;
+        		
+    		}
+    	}
+    	
+    	if(intakeEnableState.updateState(stick.getRawButton(7))) {
+    		System.out.println("Updated button");
+    		if(intakeEnableState.switchEnabled()) {
+    			intakeEnabled = true;
+    			
+    		} else {
+    			intakeEnabled = false;
+    			intakeSpeed = 0.0;
+    			
+    		}
+    	}
+    	
     	//calculate motor speeds
-    	setIntakeSpeed();
+    	//setIntakeSpeed();
     	setShooterSpeed();
     	
     	//input speed from smart dashboard
-    	//arm.set(SmartDashboard.getNumber("InputSpeed"));
+    	arm.set(SmartDashboard.getNumber("arm"));
+    	
     	
     	//drive motors using calculated speeds
     	shooter.set(shooterSpeed);
@@ -286,7 +319,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
     	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
     	SmartDashboard.putNumber("Shooter Encoder", shooterEncoder.get());
-    	//SmartDashboard.putNumber("Arm Encoder", arm.getEncPosition());
+    	SmartDashboard.putNumber("Arm Encoder", arm.getEncPosition());
     	SmartDashboard.putBoolean("Limit Switch", limitSwitch.get());
     	
     	//update PID constants to Smart Dashboard values
@@ -454,6 +487,7 @@ public class Robot extends IterativeRobot {
         }
         driveRobot(leftOutput, rightOutput);
       }
+    
     public void gyroReset() {
     	try{
     		gyro.reset();
