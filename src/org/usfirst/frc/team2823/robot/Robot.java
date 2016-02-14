@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 
 public class Robot extends IterativeRobot {
 	
+	//QUICKCLICK declarations
 	/*declare drive-related objects and variables*/
 	Encoder lDriveEncoder;
 	Encoder rDriveEncoder;
@@ -137,6 +138,8 @@ public class Robot extends IterativeRobot {
 		System.out.println("enabled:" + s.switchEnabled());
 	}
 	*/
+	
+	//QUICKCLICK robotInit
     public void robotInit() {
     	
     	//create objects based on subsystem
@@ -145,6 +148,7 @@ public class Robot extends IterativeRobot {
     	createShooterObjects();
     	createArmObjects();
     	createFileWritingObjects();
+    	putSmartDashboardValues();
     	
     	//create USB camera
     	//CameraServer camera;
@@ -168,7 +172,7 @@ public class Robot extends IterativeRobot {
     	//driveRobot(0.2, 0.2);
     	
     }
-
+    
     public void autonomousPeriodic() {
     	
     	//drive the robot for a certain number of seconds
@@ -200,6 +204,7 @@ public class Robot extends IterativeRobot {
 		}
     }
     
+    //QUICKCLICK teleopInit
     public void teleopInit() {
     	LiveWindow.setEnabled(false);
     	
@@ -216,6 +221,7 @@ public class Robot extends IterativeRobot {
     
     }
     
+    //QUICKCLICK teleopPeriodic
     public void teleopPeriodic() {
     	
     	/*//get PIDF values
@@ -535,6 +541,7 @@ public class Robot extends IterativeRobot {
     	}
     }
     
+    //QUICKCLICK creations
     //create objects to run drive system
     public void createDriveObjects() {
     	lDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
