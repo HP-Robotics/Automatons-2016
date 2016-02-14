@@ -11,11 +11,9 @@ import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.CANTalon;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
-import edu.wpi.first.wpilibj.networktables.NetworkTable;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.ADXL362;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.DigitalInput;
 
@@ -39,12 +37,12 @@ public class Robot extends IterativeRobot {
 	Talon shooter;
 	Talon intake;
 	ADXRS450_Gyro gyro;
-	ADXL362 accelerometer;
 	DigitalInput limitSwitch;
 	ATM2016Counter shooterCounter;
 	
 	ATM2016PIDController shooterSpeedControl;
 	ATM2016PIDController turnControl;
+	ATM2016PIDController armControl;
 	
 	File f;
 	BufferedWriter bw;
@@ -59,6 +57,7 @@ public class Robot extends IterativeRobot {
 	
 	double shooterSpeed = 0.0;
 	double intakeSpeed = 0.0;
+	double armSpeed = 0.0;
 	double leftSpeed;
 	double rightSpeed;
 	
@@ -76,6 +75,7 @@ public class Robot extends IterativeRobot {
 	ToggleSwitch pidState;
 	ToggleSwitch intakeState;
 	ToggleSwitch intakeEnableState;
+	ToggleSwitch encoderResetState;
 	
 	/* this class tracks a mode switch. i.e. press X to switch
 	 * to PID drive, press again to switch back to tank drive */
@@ -150,19 +150,20 @@ public class Robot extends IterativeRobot {
     	pidState = new ToggleSwitch();
     	intakeState = new ToggleSwitch();
     	intakeEnableState = new ToggleSwitch();
+    	encoderResetState = new ToggleSwitch();
     	
     	shooterEncoder.setPIDSourceType(PIDSourceType.kRate);
     	shooterEncoder.setReverseDirection(true);
     	
     	//create gyro and accelerometer
     	gyro = new ADXRS450_Gyro(Port.kOnboardCS0);
-    	accelerometer = new ADXL362(ADXL362.Range.k2G);
     	
     	//calibrate gyro
     	gyro.calibrate();
     	
     	shooterSpeedControl = new ATM2016PIDController(0.0, 0.0, 0.0, 0.0, shooterCounter, shooter, 0.01);
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroPIDOutput());
+    	
     	
     	SmartDashboard.putNumber("InputShooterSpeed", 2);
     	SmartDashboard.putNumber("P", 0.0);
@@ -172,8 +173,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("k_angle", 0.1);
     	SmartDashboard.putNumber("k_sensitivity", 0.5);
     	SmartDashboard.putNumber("arm", 0);
-    	
-    	
+    	SmartDashboard.putNumber("Arm Speed", 0.0);
     	//reset encoders
     	lDriveEncoder.reset();
     	rDriveEncoder.reset();
@@ -199,7 +199,7 @@ public class Robot extends IterativeRobot {
     	autoVelPrev = 0;
     	
     	//begin driving the robot
-    	driveRobot(0.2, 0.2);
+    	//driveRobot(0.2, 0.2);
     	
     }
 
@@ -240,6 +240,7 @@ public class Robot extends IterativeRobot {
     	//disable shooter and intake motors
     	shooterSpeed = 0.0;
     	intakeSpeed = 0.0;
+    	armSpeed = 0.0;
     	
     	arm.enable();
     	
@@ -251,7 +252,7 @@ public class Robot extends IterativeRobot {
     
     public void teleopPeriodic() {
     	
-    	//get PIDF values
+    	/*//get PIDF values
     	shooterSpeedControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
     	
     	//if the X button is pressed, use PID to drive 500 encoder ticks
@@ -278,9 +279,20 @@ public class Robot extends IterativeRobot {
     	
     	if(shooterSpeedControl.isEnabled()) {
     		SmartDashboard.putNumber("Error", shooterSpeedControl.getAvgError());
+    	}*/
+    	
+    	//set the arm speed using the Y and A buttons
+    	if(stick.getRawButton(4)){
+    		armSpeed = SmartDashboard.getNumber("Arm Speed");
+    	}
+    	else if(stick.getRawButton(2)){
+    		armSpeed = -(SmartDashboard.getNumber("Arm Speed"));
+    	}
+    	else {
+    		armSpeed = 0.0;
     	}
     	
-    	
+    	//set intake using left trigger and left bumper
     	if(intakeState.updateState(stick.getRawButton(5))&&intakeEnabled) {
     		System.out.println("Updated button");
     		if(intakeState.switchEnabled()) {
@@ -304,13 +316,17 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
+    	//reset arm encoder when B button is pressed
+    	if(encoderResetState.updateState(stick.getRawButton(3))) {
+    		arm.setEncPosition(0);
+    	}
+    	
     	//calculate motor speeds
-    	setIntakeSpeed();
-    	//setShooterSpeed();
+    	//setIntakeSpeed();
+    	setShooterSpeed();
     	
     	//input speed from smart dashboard
-    	arm.set(SmartDashboard.getNumber("arm"));
-    	
+    	arm.set(armSpeed);    	
     	
     	//drive motors using calculated speeds
     	shooter.set(shooterSpeed);
@@ -325,9 +341,6 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
     	SmartDashboard.putNumber("rDrive", rDrive1.getSpeed());
     	SmartDashboard.putNumber("Gyro Rotation", gyro.getAngle());
-    	SmartDashboard.putNumber("X Acceleration", accelerometer.getX());
-    	SmartDashboard.putNumber("Y Acceleration", accelerometer.getY());
-    	SmartDashboard.putNumber("Z Acceleration", accelerometer.getZ());
     	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
     	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
     	SmartDashboard.putNumber("Shooter Encoder", shooterEncoder.get());
@@ -335,6 +348,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putBoolean("Limit Switch", limitSwitch.get());
     	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
     	SmartDashboard.putNumber("Shooter Counter Rate", shooterCounter.getRateInRPMs());
+
     	
     	//update PID constants to Smart Dashboard values
     	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"));
