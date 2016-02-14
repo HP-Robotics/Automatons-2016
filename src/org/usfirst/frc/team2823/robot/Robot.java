@@ -24,42 +24,67 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 public class Robot extends IterativeRobot {
-	//create objects
-	Joystick stick;
+	
+	/*declare drive-related objects and variables*/
 	Encoder lDriveEncoder;
 	Encoder rDriveEncoder;
-	Encoder shooterEncoder;
+	ADXRS450_Gyro gyro;
+
 	VictorSP lDrive1;
 	VictorSP lDrive2;
 	VictorSP rDrive1;
 	VictorSP rDrive2;
-	CANTalon arm;
-	Talon shooter;
-	Talon intake;
-	ADXRS450_Gyro gyro;
-	DigitalInput limitSwitch;
-	ATM2016Counter shooterCounter;
 	
-	ATM2016PIDController shooterSpeedControl;
 	ATM2016PIDController turnControl;
+	
+	double leftSpeed;
+	double rightSpeed;
+	boolean gyroDrive = false;
+	boolean tankDriveEnabled = true;
+	
+	ToggleSwitch pidState;
+	
+	/*declare intake-related objects and variables*/
+	Talon intake;
+	
+	double intakeSpeed = 0.0;
+	boolean intakeEnabled = false;
+	
+	ToggleSwitch intakeState;
+	ToggleSwitch intakeEnableState;
+	
+	/*declare shooter-related objects and variables*/
+	Encoder shooterEncoder;
+	
+	Talon shooter;
+	
+	ATM2016Counter shooterCounter;
+	ATM2016PIDController shooterSpeedControl;
+	
+	double shooterSpeed = 0.0;
+
+	/*declare arm-related objects and variables*/
+	DigitalInput limitSwitch;
+	
+	CANTalon arm;
+	
 	ATM2016PIDController armControl;
 	
+	double armSpeed = 0.0;
+	
+	/*declare CSV file-writing-related objects and variables*/
 	File f;
 	BufferedWriter bw;
 	FileWriter fw;
 	
-	//declare class-wide variables
 	int autoCounter;
 	double autoTimePrev;
 	double autoPosPrev;
 	double autoVelPrev;
 	double initTime;
 	
-	double shooterSpeed = 0.0;
-	double intakeSpeed = 0.0;
-	double armSpeed = 0.0;
-	double leftSpeed;
-	double rightSpeed;
+	/*declare joystick and button press-related objects*/
+	Joystick stick;
 	
 	boolean aButtonPressed = false;
 	boolean yButtonPressed = false;
@@ -68,16 +93,10 @@ public class Robot extends IterativeRobot {
 	boolean lTriggerPressed = false;
 	boolean rBumperPressed = false;
 	boolean rTriggerPressed = false;
-	boolean gyroDrive = false;
-	boolean tankDriveEnabled = true;
-	boolean intakeEnabled = false;
 	
-	ToggleSwitch pidState;
-	ToggleSwitch intakeState;
-	ToggleSwitch intakeEnableState;
 	ToggleSwitch encoderResetState;
 	
-	/* this class tracks a mode switch. i.e. press X to switch
+	/* this class tracks a mode switch, e.g. press X to switch
 	 * to PID drive, press again to switch back to tank drive */
 	static class ToggleSwitch {
 		private boolean state = false;
@@ -120,74 +139,21 @@ public class Robot extends IterativeRobot {
 	*/
     public void robotInit() {
     	
+    	//create objects based on subsystem
+    	createDriveObjects();
+    	createIntakeObjects();
+    	createShooterObjects();
+    	createArmObjects();
+    	createFileWritingObjects();
+    	
     	//create USB camera
     	//CameraServer camera;
     	//camera = CameraServer.getInstance();
     	//camera.setQuality(50);
     	//camera.startAutomaticCapture("cam0");
     	
-    	//create objects
+    	//create joystick
     	stick = new Joystick(0);
-    	lDrive1 = new VictorSP(0);
-    	lDrive2 = new VictorSP(1);
-    	rDrive1 = new VictorSP(2);
-    	rDrive2 = new VictorSP(3);
-    	shooter = new Talon(4);
-    	intake = new Talon(5);
-    	arm = new CANTalon(0);
-    	
-    	limitSwitch = new DigitalInput(9);
-    	
-    	shooterCounter = new ATM2016Counter();
-    	shooterCounter.setUpSource(6);
-    	shooterCounter.setUpSourceEdge(true, false);
-    	shooterCounter.setPIDSourceType(PIDSourceType.kDisplacement);
-    	
-    	lDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
-    	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
-    	shooterEncoder = new Encoder(4, 5, true, EncodingType.k4X);
-    	
-    	pidState = new ToggleSwitch();
-    	intakeState = new ToggleSwitch();
-    	intakeEnableState = new ToggleSwitch();
-    	encoderResetState = new ToggleSwitch();
-    	
-    	shooterEncoder.setPIDSourceType(PIDSourceType.kRate);
-    	shooterEncoder.setReverseDirection(true);
-    	
-    	//create gyro and accelerometer
-    	gyro = new ADXRS450_Gyro(Port.kOnboardCS0);
-    	
-    	//calibrate gyro
-    	gyro.calibrate();
-    	
-    	shooterSpeedControl = new ATM2016PIDController(0.0, 0.0, 0.0, 0.0, shooterCounter, shooter, 0.01);
-    	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroPIDOutput());
-    	
-    	
-    	SmartDashboard.putNumber("InputShooterSpeed", 2);
-    	SmartDashboard.putNumber("P", 0.0);
-    	SmartDashboard.putNumber("I", 0.0);
-    	SmartDashboard.putNumber("D", 0.0);
-    	SmartDashboard.putNumber("F", 0.0);
-    	SmartDashboard.putNumber("k_angle", 0.1);
-    	SmartDashboard.putNumber("k_sensitivity", 0.5);
-    	SmartDashboard.putNumber("arm", 0);
-    	SmartDashboard.putNumber("Arm Speed", 0.0);
-    	//reset encoders
-    	lDriveEncoder.reset();
-    	rDriveEncoder.reset();
-    	shooterEncoder.reset();
-    	
-    	//create .csv file to log data
-    	createCSV("AutoOutput");
-    	createCSV("TeleopOutput");
-    	
-    	//write header to csv file
-    	writeCSV("\nTimestamp, Left Encoder, Right Encoder, Left Speed, Right Speed, dT, L-Vel, L-Accel", "TeleopOutput");
-    	writeCSV("\nTimestamp, Left Encoder, Right Encoder, Left Speed, Right Speed, dT, L-Vel, L-Accel", "AutoOutput");
-    	
-    	//shooterSpeed = prefs.getDouble("Speed", 0.0);
     }
     
     public void autonomousInit() {
@@ -568,5 +534,90 @@ public class Robot extends IterativeRobot {
     		turnControl.reset();
     	}
     }
+    
+    //create objects to run drive system
+    public void createDriveObjects() {
+    	lDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
+    	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
+    	lDriveEncoder.reset();
+    	rDriveEncoder.reset();
+    	
+    	gyro = new ADXRS450_Gyro(Port.kOnboardCS0);
+    	
+    	//calibrate gyro
+    	gyro.calibrate();
+    	
+    	lDrive1 = new VictorSP(0);
+    	lDrive2 = new VictorSP(1);
+    	rDrive1 = new VictorSP(2);
+    	rDrive2 = new VictorSP(3);
+    	
+    	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroPIDOutput());
+    	
+    	pidState = new ToggleSwitch();
+    	
+    }
+    
+    //create objects to run intake system
+    public void createIntakeObjects() {
+    	intake = new Talon(4);
+    	
+    	intakeState = new ToggleSwitch();
+    	intakeEnableState = new ToggleSwitch();
+    	
+    }
+    
+    //create objects to run shooter system
+    public void createShooterObjects() {
+    	shooterEncoder = new Encoder(4, 5, true, EncodingType.k4X);
+    	shooterEncoder.setPIDSourceType(PIDSourceType.kRate);
+    	shooterEncoder.setReverseDirection(true);
+    	shooterEncoder.reset();
+    	
+    	shooter = new Talon(5);
+    	
+    	shooterCounter = new ATM2016Counter();
+    	shooterCounter.setUpSource(6);
+    	shooterCounter.setUpSourceEdge(true, false);
+    	shooterCounter.setPIDSourceType(PIDSourceType.kDisplacement);
+    	
+    	shooterSpeedControl = new ATM2016PIDController(0.0, 0.0, 0.0, 0.0, shooterCounter, shooter, 0.01);
+    	
+    }
+    
+    //create objects to run the shooter arm
+    public void createArmObjects() {
+    	limitSwitch = new DigitalInput(9);
+    	
+    	arm = new CANTalon(0);
+    	
+    	encoderResetState = new ToggleSwitch();
+    	
+    }
+    
+    //create elements to log data to .csv files
+    public void createFileWritingObjects() {
+    	//create .csv files to log data
+    	createCSV("AutoOutput");
+    	createCSV("TeleopOutput");
+    	
+    	//write header to .csv files
+    	writeCSV("\nTimestamp, Left Encoder, Right Encoder, Left Speed, Right Speed, dT, L-Vel, L-Accel", "TeleopOutput");
+    	writeCSV("\nTimestamp, Left Encoder, Right Encoder, Left Speed, Right Speed, dT, L-Vel, L-Accel", "AutoOutput");
+    	
+    }
    	
+    //put initial values to the SmartDashboard
+    public void putSmartDashboardValues() {
+    	SmartDashboard.putNumber("InputShooterSpeed", 2);
+    	SmartDashboard.putNumber("P", 0.0);
+    	SmartDashboard.putNumber("I", 0.0);
+    	SmartDashboard.putNumber("D", 0.0);
+    	SmartDashboard.putNumber("F", 0.0);
+    	SmartDashboard.putNumber("k_angle", 0.1);
+    	SmartDashboard.putNumber("k_sensitivity", 0.5);
+    	SmartDashboard.putNumber("arm", 0);
+    	SmartDashboard.putNumber("Arm Speed", 0.0);
+    	
+    }
  }
