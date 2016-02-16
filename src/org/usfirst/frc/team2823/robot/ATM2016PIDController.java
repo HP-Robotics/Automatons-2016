@@ -328,7 +328,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
           }
 
           m_result = m_P * m_error + m_I * m_totalError +
-                     m_D * (m_error - m_prevError);// + calculateFeedForward();
+                     m_D * (m_error - m_prevError) + calculateFeedForward();
           
           m_POutput = m_P * m_error;
           m_IOutput = m_I * m_totalError;
@@ -391,10 +391,12 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       return m_F * getSetpoint();
     }
     else {
-      double temp = m_F * getDeltaSetpoint();
+    	//disabling feedforward term because of division by 0 errors (Timer may be too slow for our purposes)
+      /*double temp = m_F * getDeltaSetpoint();
       m_prevSetpoint = m_setpoint;
       m_setpointTimer.reset();
-      return temp;
+      return temp;*/
+    	return 0.0;
     }
   }
 

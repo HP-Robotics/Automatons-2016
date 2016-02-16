@@ -49,7 +49,6 @@ public class Robot extends IterativeRobot {
 	Talon intake;
 	
 	double intakeSpeed = 0.0;
-	boolean intakeEnabled = false;
 	
 	ToggleSwitch intakeState;
 	ToggleSwitch intakeEnableState;
@@ -65,7 +64,8 @@ public class Robot extends IterativeRobot {
 	double shooterSpeed = 0.0;
 
 	/*declare arm-related objects and variables*/
-	DigitalInput limitSwitch;
+	DigitalInput upperLimitSwitch;
+	DigitalInput lowerLimitSwitch;
 	
 	CANTalon arm;
 	
@@ -121,6 +121,11 @@ public class Robot extends IterativeRobot {
 			previousState = btnState;
 			
 			return stateChanged;
+		}
+		
+		public void reset() {
+			state = false;
+			previousState = true;
 		}
 	}
 	
@@ -224,17 +229,17 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK teleopPeriodic
     public void teleopPeriodic() {
     	
-    	/*//get PIDF values
-    	shooterSpeedControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
+    	//get PIDF values
+    	//shooterSpeedControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
     	
-    	//if the X button is pressed, use PID to drive 500 encoder ticks
+    	//if the X button is pressed, use PID to drive shooter wheel
     	if(pidState.updateState(stick.getRawButton(1))) {
     		System.out.println("Updated button");
     		if(pidState.switchEnabled()) {
     			System.out.println("PID should be on");
     			shooterSpeedControl.enableLog("ShootPID.csv");
     			shooterSpeedControl.enable();
-    			shooterSpeedControl.setSetpointInRPMs(SmartDashboard.getNumber("InputShooterSpeed"));
+    			shooterSpeedControl.setSetpointInRPMs(SmartDashboard.getNumber("TargetShooterSpeed"));
     			
     			tankDriveEnabled = false;
     			
@@ -251,21 +256,21 @@ public class Robot extends IterativeRobot {
     	
     	if(shooterSpeedControl.isEnabled()) {
     		SmartDashboard.putNumber("Error", shooterSpeedControl.getAvgError());
-    	}*/
+    	}
     	
     	//set the arm speed using the Y and A buttons
     	if(stick.getRawButton(4)){
-    		armSpeed = SmartDashboard.getNumber("Arm Speed");
+    		armSpeed = 0.4;
     	}
-    	else if(stick.getRawButton(2)){
-    		armSpeed = -(SmartDashboard.getNumber("Arm Speed"));
+    	else if(stick.getRawButton(2) && !lowerLimitSwitch.get()){
+    		armSpeed = -0.4;
     	}
     	else {
     		armSpeed = 0.0;
     	}
     	
     	//set intake using left trigger and left bumper
-    	if(intakeState.updateState(stick.getRawButton(5))&&intakeEnabled) {
+    	if(intakeState.updateState(stick.getRawButton(5))) {
     		System.out.println("Updated button");
     		if(intakeState.switchEnabled()) {
     			intakeSpeed = -0.8;
@@ -277,15 +282,9 @@ public class Robot extends IterativeRobot {
     	}
     	
     	if(intakeEnableState.updateState(stick.getRawButton(7))) {
-    		System.out.println("Updated button");
-    		if(intakeEnableState.switchEnabled()) {
-    			intakeEnabled = true;
-    			
-    		} else {
-    			intakeEnabled = false;
-    			intakeSpeed = 0.0;
-    			
-    		}
+    		intakeSpeed = 0.0;
+    		intakeEnableState.reset();
+    		
     	}
     	
     	//reset arm encoder when B button is pressed
@@ -317,9 +316,10 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
     	SmartDashboard.putNumber("Shooter Encoder", shooterEncoder.get());
     	SmartDashboard.putNumber("Arm Encoder", arm.getEncPosition());
-    	SmartDashboard.putBoolean("Limit Switch", limitSwitch.get());
+    	SmartDashboard.putBoolean("Lower Limit", lowerLimitSwitch.get());
+    	SmartDashboard.putBoolean("Upper Limit", upperLimitSwitch.get());
     	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
-    	SmartDashboard.putNumber("Shooter Counter Rate", shooterCounter.getRateInRPMs());
+    	SmartDashboard.putNumber("ActualShooterSpeed", shooterCounter.getRateInRPMs());
 
     	
     	//update PID constants to Smart Dashboard values
@@ -588,13 +588,14 @@ public class Robot extends IterativeRobot {
     	shooterCounter.setUpSourceEdge(true, false);
     	shooterCounter.setPIDSourceType(PIDSourceType.kDisplacement);
     	
-    	shooterSpeedControl = new ATM2016PIDController(0.0, 0.0, 0.0, 0.0, shooterCounter, shooter, 0.01);
-    	
+    	shooterSpeedControl = new ATM2016PIDController(-0.0001, -0.0000005, 0.0, 0.0, shooterCounter, shooter, 0.01);
+    	shooterSpeedControl.setOutputRange(-1.0, 0.0);  	
     }
     
     //create objects to run the shooter arm
     public void createArmObjects() {
-    	limitSwitch = new DigitalInput(9);
+    	upperLimitSwitch = new DigitalInput(9);
+    	lowerLimitSwitch = new DigitalInput(8);
     	
     	arm = new CANTalon(0);
     	
@@ -616,7 +617,13 @@ public class Robot extends IterativeRobot {
    	
     //put initial values to the SmartDashboard
     public void putSmartDashboardValues() {
-    	SmartDashboard.putNumber("InputShooterSpeed", 2);
+    	/**
+    	 * TgtShtrSpeed: 3900 up close (0 robot widths)
+    	 * TgtShtrSpeed: 3500 @ 1 robot width
+    	 * TgtShtrSpeed: 3400 @ 2 robot widths
+    	 * TgtShtrSpeed: 3300 far away (3 robot widths)
+    	 */
+    	SmartDashboard.putNumber("TargetShooterSpeed", 3300);
     	SmartDashboard.putNumber("P", 0.0);
     	SmartDashboard.putNumber("I", 0.0);
     	SmartDashboard.putNumber("D", 0.0);
