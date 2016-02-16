@@ -125,7 +125,7 @@ public class Robot extends IterativeRobot {
 		
 		public void reset() {
 			state = false;
-			previousState = true;
+			previousState = false;
 		}
 	}
 	
@@ -259,7 +259,7 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//set the arm speed using the Y and A buttons
-    	if(stick.getRawButton(4)){
+    	if(stick.getRawButton(4) && !upperLimitSwitch.get()){
     		armSpeed = 0.4;
     	}
     	else if(stick.getRawButton(2) && !lowerLimitSwitch.get()){
@@ -283,7 +283,7 @@ public class Robot extends IterativeRobot {
     	
     	if(intakeEnableState.updateState(stick.getRawButton(7))) {
     		intakeSpeed = 0.0;
-    		intakeEnableState.reset();
+    		intakeState.reset();
     		
     	}
     	
@@ -511,11 +511,11 @@ public class Robot extends IterativeRobot {
     			gyroDrive = true;
     			tankDriveEnabled = false;
     		}
-    	} else if(stick.getPOV() == 90) {
+    	}else if(stick.getPOV() == 90) {
     		if(!gyroDrive){
     			gyroReset();
     			turnControl.setSetpoint(90);
-    			turnControl.enableLog("TurnPID.csv");
+    			//turnControl.enableLog("TurnPID.csv");
     			turnControl.enable();
     			
     			gyroDrive = true;
@@ -525,7 +525,7 @@ public class Robot extends IterativeRobot {
     		if(!gyroDrive){
     			gyroReset();
     			turnControl.setSetpoint(-90);
-    			turnControl.enableLog("TurnPID.csv");
+    			//turnControl.enableLog("TurnPID.csv");
     			turnControl.enable();
     			
     			gyroDrive = true;
@@ -536,7 +536,7 @@ public class Robot extends IterativeRobot {
     		gyroDrive = false;
     		
     		turnControl.disable();
-    		turnControl.closeLog();
+    		//turnControl.closeLog();
     		turnControl.reset();
     	}
     }
