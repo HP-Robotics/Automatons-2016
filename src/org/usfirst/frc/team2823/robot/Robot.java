@@ -49,6 +49,7 @@ public class Robot extends IterativeRobot {
 	Talon intake;
 	
 	double intakeSpeed = 0.0;
+	String intakeOn = "Off";
 	
 	ToggleSwitch intakeState;
 	ToggleSwitch intakeEnableState;
@@ -260,7 +261,7 @@ public class Robot extends IterativeRobot {
     	
     	//set the arm speed using the Y and A buttons
     	if(stick.getRawButton(4) && !upperLimitSwitch.get()){
-    		armSpeed = 0.4;
+    		armSpeed = 0.45;
     	}
     	else if(stick.getRawButton(2) && !lowerLimitSwitch.get()){
     		armSpeed = -0.4;
@@ -273,16 +274,18 @@ public class Robot extends IterativeRobot {
     	if(intakeState.updateState(stick.getRawButton(5))) {
     		System.out.println("Updated button");
     		if(intakeState.switchEnabled()) {
-    			intakeSpeed = -0.8;
+    			intakeSpeed = -1.0;
+    			intakeOn = "In";
     			
     		} else {
-    			intakeSpeed = 0.8;
-        		
+    			intakeSpeed = 1.0;
+        		intakeOn = "Out";
     		}
     	}
     	
     	if(intakeEnableState.updateState(stick.getRawButton(7))) {
     		intakeSpeed = 0.0;
+    		intakeOn = "Off";
     		intakeState.reset();
     		
     	}
@@ -320,6 +323,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putBoolean("Upper Limit", upperLimitSwitch.get());
     	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
     	SmartDashboard.putNumber("ActualShooterSpeed", shooterCounter.getRateInRPMs());
+    	SmartDashboard.putString("Intake", intakeOn);
 
     	
     	//update PID constants to Smart Dashboard values
