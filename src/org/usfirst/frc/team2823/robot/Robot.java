@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PIDOutput;
 import edu.wpi.first.wpilibj.PIDSourceType;
 import edu.wpi.first.wpilibj.SPI.Port;
+import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.CANTalon;
 import edu.wpi.first.wpilibj.VictorSP;
@@ -76,7 +77,8 @@ public class Robot extends IterativeRobot {
 	
 	double armSpeed = 0.0;
 	
-
+	/*declare trigger-related objects and variables*/
+	Servo trigger;
 	
 	/*declare auto-related objects*/
 	Command autoCommand;
@@ -153,6 +155,7 @@ public class Robot extends IterativeRobot {
     	createArmObjects();
     	putSmartDashboardValues();
     	createAutoModes();
+    	createTriggerObjects();
     	
     	//create USB camera
     	//CameraServer camera;
@@ -255,6 +258,13 @@ public class Robot extends IterativeRobot {
     		
     	}
     	
+    	if(stick.getRawButton(3)){
+    		trigger.setAngle(180);
+    	}
+    	else{
+    		trigger.setAngle(0);
+    	}
+    	
     	//reset arm encoder when B button is pressed
     	if(encoderResetState.updateState(stick.getRawButton(3))) {
     		arm.setEncPosition(0);
@@ -262,7 +272,7 @@ public class Robot extends IterativeRobot {
     	
     	//calculate motor speeds
     	//setIntakeSpeed();
-    	setShooterSpeed();
+    	//setShooterSpeed();
     	
     	//input speed from smart dashboard
     	arm.set(armSpeed);    	
@@ -569,5 +579,9 @@ public class Robot extends IterativeRobot {
 		
     	SmartDashboard.putData("Autonomous Mode", autoChooser);
 		
+    }
+    
+    public void createTriggerObjects(){
+    	trigger = new Servo(9);
     }
  }
