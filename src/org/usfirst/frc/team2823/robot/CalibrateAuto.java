@@ -8,7 +8,7 @@ import java.io.PrintWriter;
 
 import edu.wpi.first.wpilibj.Timer;
 
-public class CalibrateAuto implements AutoMode {
+public class CalibrateAuto extends AutoMode {
 	
 	Robot robot;
 	
@@ -24,9 +24,9 @@ public class CalibrateAuto implements AutoMode {
 	FileWriter fw;
 	
 	public CalibrateAuto(Robot myBot) {
-		robot = myBot;
+		super(myBot);
 	}
-	
+
 	@Override
 	public void autoInit() {
 		System.out.println("Running Calibrate auto");

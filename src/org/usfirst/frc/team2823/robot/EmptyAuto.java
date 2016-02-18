@@ -1,6 +1,10 @@
 package org.usfirst.frc.team2823.robot;
 
-public class EmptyAuto implements AutoMode {
+public class EmptyAuto extends AutoMode {
+
+	public EmptyAuto(Robot myBot) {
+		super(myBot);
+	}
 
 	@Override
 	public void autoInit() {

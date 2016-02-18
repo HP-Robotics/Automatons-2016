@@ -578,7 +578,8 @@ public class Robot extends IterativeRobot {
     	
     	autoChooser = new SendableChooser();
     	
-		autoChooser.addObject("Empty: Do Nothing", new EmptyAuto());
+		autoChooser.addObject("Empty: Do Nothing", new EmptyAuto(this));
+		autoChooser.addObject("Drive Back", new MoveBackAuto(this));
 		autoChooser.addDefault("Calibrate", new CalibrateAuto(this));
 		
     	SmartDashboard.putData("Autonomous Mode", autoChooser);
