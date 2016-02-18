@@ -29,6 +29,8 @@ public class CalibrateAuto implements AutoMode {
 	
 	@Override
 	public void autoInit() {
+		System.out.println("Running Calibrate auto");
+		
     	//initialize values for capturing data during autonomous
     	autoCounter = 0;
     	initTime = Timer.getFPGATimestamp();

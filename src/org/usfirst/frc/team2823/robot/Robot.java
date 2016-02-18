@@ -228,11 +228,11 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//set the arm speed using the Y and A buttons
-    	if(stick.getRawButton(4) && !upperLimitSwitch.get()){
-    		armSpeed = 0.45;
+    	if(stick.getRawButton(4)/* && !upperLimitSwitch.get()*/){
+    		armSpeed = 0.55;
     	}
-    	else if(stick.getRawButton(2) && !lowerLimitSwitch.get()){
-    		armSpeed = -0.4;
+    	else if(stick.getRawButton(2)/* && !lowerLimitSwitch.get()*/){
+    		armSpeed = -0.45;
     	}
     	else {
     		armSpeed = 0.0;
@@ -570,7 +570,11 @@ public class Robot extends IterativeRobot {
     }
     
     //create autoChooser and add auto modes
-    public void createAutoModes(){
+    /**WARNING! If any entries are added to/removed from the SendableChooser, the robot AND the driver station computer must be simultaneously rebooted!
+     * This comes from the NetworkTables being stored on both the driver station and the roboRIO
+     * **/
+    
+    public void createAutoModes() {
     	
     	autoChooser = new SendableChooser();
     	
@@ -581,7 +585,7 @@ public class Robot extends IterativeRobot {
 		
     }
     
-    public void createTriggerObjects(){
+    public void createTriggerObjects() {
     	trigger = new Servo(9);
     }
  }

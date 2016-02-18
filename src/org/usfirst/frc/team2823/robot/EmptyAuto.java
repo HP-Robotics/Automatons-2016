@@ -10,13 +10,15 @@ public class EmptyAuto implements AutoMode {
 
 	@Override
 	public void autoPeriodic() {
-		System.out.println("Doing nothing...");
+		int doNothingTime = 1000;
+		
+		System.out.println("Doing nothing for " + (doNothingTime / 1000) + " second(s)...");
 		try{
-			Thread.sleep(10000);
+			Thread.sleep(doNothingTime);
 		}
 		catch(Exception e)
 		{
-			System.out.println("Fatal error!\n\nWho cares? Continuing...");
+			System.out.println("Fatal error!\n\nWho cares? Taylor does... Continuing...");
 		}
 		System.out.println("Nothing done successfully!");
 	}
