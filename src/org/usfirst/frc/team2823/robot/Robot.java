@@ -228,10 +228,10 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//set the arm speed using the Y and A buttons
-    	if(stick.getRawButton(4)/* && !upperLimitSwitch.get()*/){
+    	if(stick.getRawButton(5)/* && !upperLimitSwitch.get()*/){
     		armSpeed = 0.55;
     	}
-    	else if(stick.getRawButton(2)/* && !lowerLimitSwitch.get()*/){
+    	else if(stick.getRawButton(6)/* && !lowerLimitSwitch.get()*/){
     		armSpeed = -0.45;
     	}
     	else {
@@ -239,7 +239,7 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//set intake using left trigger and left bumper
-    	if(intakeState.updateState(stick.getRawButton(5))) {
+    	if(intakeState.updateState(stick.getRawButton(7))) {
     		System.out.println("Updated button");
     		if(intakeState.switchEnabled()) {
     			intakeSpeed = -1.0;
@@ -251,14 +251,14 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
-    	if(intakeEnableState.updateState(stick.getRawButton(7))) {
+    	if(intakeEnableState.updateState(stick.getRawButton(8))) {
     		intakeSpeed = 0.0;
     		intakeOn = "Off";
     		intakeState.reset();
     		
     	}
     	
-    	if(stick.getRawButton(3)){
+    	if(stick.getRawButton(3) && shooterIsAtSpeed()){
     		trigger.setAngle(180);
     	}
     	else{
@@ -324,6 +324,17 @@ public class Robot extends IterativeRobot {
     	
 
 	}
+    
+    public boolean shooterIsAtSpeed() {
+    	double actualSpeed = Math.abs(SmartDashboard.getNumber("ActualShooterSpeed"));
+    	double targetSpeed = Math.abs(SmartDashboard.getNumber("TargetShooterSpeed"));
+    	
+    	if(Math.abs(targetSpeed - actualSpeed) < 100) {
+    		return true;
+    	}
+    	
+    	return false;
+    }
     
     public void setIntakeSpeed() {
     	//if the left trigger (bottom) is pressed, decrease intakeSpeed by 0.2

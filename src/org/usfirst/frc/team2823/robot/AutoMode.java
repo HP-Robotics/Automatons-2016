@@ -8,7 +8,7 @@ public class AutoMode {
 	Robot robot;
 	Timer tick;
 	int stage = 0;
-	double stageTimeouts[];
+	double[] stageTimeouts;
 	
 	
 	public AutoMode(Robot myBot) {

@@ -1,5 +1,7 @@
 package org.usfirst.frc.team2823.robot;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 public class MoveBackAuto extends AutoMode {
 
 	public MoveBackAuto(Robot myBot) {
@@ -8,8 +10,9 @@ public class MoveBackAuto extends AutoMode {
 
 	@Override
 	public void autoInit() {
-		double t[] = { 1.0, 2.0 };
+		double[] t = { 2.0, 1.0 };
 		setStageTimeouts(t);
+		robot.gyroReset();
 		startAuto();
 	}
 
@@ -28,11 +31,13 @@ public class MoveBackAuto extends AutoMode {
 		}
 	}
 	
-	public void driveBack() {
-	     robot.driveRobot(0.2, 0.2);
+	public void driveForward() {
+		 robot.goNow(0.2, -robot.gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.5, 0.5);
+	     //robot.driveRobot(0.2, 0.2);
 	}
 	
-	public void driveForward() {
-		robot.driveRobot(-0.2, -0.2);
+	public void driveBack() {
+		robot.goNow(-0.2, -robot.gyro.getAngle() * SmartDashboard.getNumber("k_angle"), -0.5, 0.5);
+		//robot.driveRobot(-0.2, -0.2);
 	}
 }
