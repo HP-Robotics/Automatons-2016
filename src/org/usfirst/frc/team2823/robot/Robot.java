@@ -259,10 +259,10 @@ public class Robot extends IterativeRobot {
     	}
     	
     	if(stick.getRawButton(3) && shooterIsAtSpeed()){
-    		trigger.setAngle(180);
+    		trigger.setAngle(80);
     	}
     	else{
-    		trigger.setAngle(0);
+    		trigger.setAngle(110);
     	}
     	
     	//reset arm encoder when B button is pressed
@@ -299,7 +299,6 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
     	SmartDashboard.putNumber("ActualShooterSpeed", shooterCounter.getRateInRPMs());
     	SmartDashboard.putString("Intake", intakeOn);
-
     	
     	//update PID constants to Smart Dashboard values
     	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"));
@@ -578,6 +577,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("arm", 0);
     	SmartDashboard.putNumber("Arm Speed", 0.0);
     	
+    	
     }
     
     //create autoChooser and add auto modes
@@ -599,5 +599,6 @@ public class Robot extends IterativeRobot {
     
     public void createTriggerObjects() {
     	trigger = new Servo(9);
+    	trigger.setAngle(110);
     }
  }
