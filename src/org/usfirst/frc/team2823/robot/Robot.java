@@ -73,7 +73,10 @@ public class Robot extends IterativeRobot {
 	
 	CANTalon arm;
 	
+	CANPIDSource armEncoder;
 	ATM2016PIDController armControl;
+	
+	ToggleSwitch armState;
 	
 	double armSpeed = 0.0;
 	
@@ -88,13 +91,13 @@ public class Robot extends IterativeRobot {
 	/*declare joystick and button press-related objects*/
 	Joystick stick;
 	
-	boolean aButtonPressed = false;
-	boolean yButtonPressed = false;
-	boolean xButtonPressed = false;
-	boolean lBumperPressed = false;
-	boolean lTriggerPressed = false;
-	boolean rBumperPressed = false;
-	boolean rTriggerPressed = false;
+	//boolean aButtonPressed = false;
+	//boolean yButtonPressed = false;
+	//boolean xButtonPressed = false;
+	//boolean lBumperPressed = false;
+	//boolean lTriggerPressed = false;
+	//boolean rBumperPressed = false;
+	//boolean rTriggerPressed = false;
 	
 	ToggleSwitch encoderResetState;
 	
@@ -182,15 +185,14 @@ public class Robot extends IterativeRobot {
     public void teleopInit() {
     	LiveWindow.setEnabled(false);
     	
-    	//disable shooter and intake motors
+    	//disable shooter, intake and arm motors
     	shooterSpeed = 0.0;
     	intakeSpeed = 0.0;
     	armSpeed = 0.0;
     	
     	arm.enable();
     	
-    	// This will throw an exception if there is no Gyro and crash the robot.
-    	//   We need to add a try block around this, maybe in a quick function to wrap it
+    	//reset gyro
     	gyroReset();
     
     }
@@ -198,46 +200,110 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK teleopPeriodic
     public void teleopPeriodic() {
     	
-    	//get PIDF values
-    	//shooterSpeedControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
+    	//run the trigger only if the shooter wheel is at speed
+    	if(stick.getRawButton(3) && shooterIsAtSpeed()){
+    		trigger.setAngle(80);
+    	}
+    	else{
+    		trigger.setAngle(110);
+    	}
     	
-    	//if the X button is pressed, use PID to drive shooter wheel
-    	if(pidState.updateState(stick.getRawButton(1))) {
-    		System.out.println("Updated button");
-    		if(pidState.switchEnabled()) {
-    			System.out.println("PID should be on");
-    			shooterSpeedControl.enableLog("ShootPID.csv");
-    			shooterSpeedControl.enable();
-    			shooterSpeedControl.setSetpointInRPMs(SmartDashboard.getNumber("TargetShooterSpeed"));
-    			
-    			tankDriveEnabled = false;
+    	//reset arm encoder when B button is pressed
+    	if(encoderResetState.updateState(stick.getRawButton(3))) {
+    		armEncoder.reset();
+    	}
+    	
+    	//use A button to enable/disable arm PID
+    	if(armState.updateState(stick.getRawButton(5))) {
+    		if(armState.switchEnabled()) {
+    			//turn PID on and drive to setpoint
+    			System.out.println("Arm PID should be on");
+    			armControl.enableLog("armPID.csv");
+    			armControl.enable();
+    			armControl.setSetpoint(SmartDashboard.getNumber("Arm Target"));
     			
     		} else {
-    			System.out.println("PID should be off");
-    			shooterSpeedControl.disable();
-    			shooterSpeedControl.reset();
-        		shooterSpeedControl.closeLog();
-    			
-        		tankDriveEnabled = true;
-        		
+    			System.out.println("Arm PID should be off");
+    			armControl.disable();
+    			armControl.reset();
+    			armControl.closeLog();
     		}
+    		
     	}
+    	
+    	//calculate motor speeds
+    	setIntakeSpeed();
+    	setShooterSpeed();
+    	//setArmSpeed();
+    	
+    	//drive motors using calculated speeds
+    	intake.set(intakeSpeed);
+    	shooter.set(shooterSpeed);
+    	arm.set(armSpeed);  
+    	
+    	goGyro();
+    	if(tankDriveEnabled){
+    		driveRobot(stick.getRawAxis(1)* -0.75, stick.getRawAxis(3)* -0.75);
+    	}
+    	
+    	//send data to Smart Dashboard
+    	SmartDashboard.putNumber("Speed", shooterSpeed);
+    	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
+    	SmartDashboard.putNumber("rDrive", rDrive1.getSpeed());
+    	SmartDashboard.putNumber("Gyro Rotation", gyro.getAngle());
+    	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
+    	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
+    	SmartDashboard.putNumber("Shooter Encoder", shooterEncoder.get());
+    	SmartDashboard.putNumber("Arm Encoder", arm.getEncPosition());
+    	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
+    	SmartDashboard.putNumber("ActualShooterSpeed", shooterCounter.getRateInRPMs());
+    	SmartDashboard.putBoolean("Lower Limit", lowerLimitSwitch.get());
+    	SmartDashboard.putBoolean("Upper Limit", upperLimitSwitch.get());
+    	SmartDashboard.putString("Intake", intakeOn);
+    	
     	
     	if(shooterSpeedControl.isEnabled()) {
     		SmartDashboard.putNumber("Error", shooterSpeedControl.getAvgError());
     	}
     	
-    	//set the arm speed using the Y and A buttons
-    	if(stick.getRawButton(5)/* && !upperLimitSwitch.get()*/){
-    		armSpeed = 0.55;
-    	}
-    	else if(stick.getRawButton(6)/* && !lowerLimitSwitch.get()*/){
-    		armSpeed = -0.45;
-    	}
-    	else {
-    		armSpeed = 0.0;
+    	//update PID constants to Smart Dashboard values
+    	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"));
+    	armControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
+    	
+    }
+    
+    public void testPeriodic() {
+    	LiveWindow.run();
+    }
+    
+   
+  
+    
+    //function to tank-drive robot given speed values
+    public void driveRobot(double left, double right) {
+    		// Values are multiplied by -1 to ensure that the motors on the right spin opposite the motors on the left.
+			rDrive1.set(-right);
+			rDrive2.set(-right);
+			
+			lDrive1.set(left);
+			lDrive2.set(left);
+    	
+
+	}
+    
+    public boolean shooterIsAtSpeed() {
+    	double actualSpeed = Math.abs(SmartDashboard.getNumber("ActualShooterSpeed"));
+    	double targetSpeed = Math.abs(SmartDashboard.getNumber("TargetShooterSpeed"));
+    	
+    	if(Math.abs(targetSpeed - actualSpeed) < 100) {
+    		return true;
     	}
     	
+    	return false;
+    }
+    
+    //QUICKCLICK set motor speeds
+    public void setIntakeSpeed() {
     	//set intake using left trigger and left bumper
     	if(intakeState.updateState(stick.getRawButton(7))) {
     		System.out.println("Updated button");
@@ -257,130 +323,42 @@ public class Robot extends IterativeRobot {
     		intakeState.reset();
     		
     	}
-    	
-    	if(stick.getRawButton(3) && shooterIsAtSpeed()){
-    		trigger.setAngle(80);
-    	}
-    	else{
-    		trigger.setAngle(110);
-    	}
-    	
-    	//reset arm encoder when B button is pressed
-    	if(encoderResetState.updateState(stick.getRawButton(3))) {
-    		arm.setEncPosition(0);
-    	}
-    	
-    	//calculate motor speeds
-    	//setIntakeSpeed();
-    	//setShooterSpeed();
-    	
-    	//input speed from smart dashboard
-    	arm.set(armSpeed);    	
-    	
-    	//drive motors using calculated speeds
-    	shooter.set(shooterSpeed);
-    	intake.set(intakeSpeed);
-    	goGyro();
-    	if(tankDriveEnabled){
-    		driveRobot(stick.getRawAxis(1)* -0.75, stick.getRawAxis(3)* -0.75);
-    	}
-    	
-    	//send data to Smart Dashboard
-    	SmartDashboard.putNumber("Speed", shooterSpeed);
-    	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
-    	SmartDashboard.putNumber("rDrive", rDrive1.getSpeed());
-    	SmartDashboard.putNumber("Gyro Rotation", gyro.getAngle());
-    	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
-    	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
-    	SmartDashboard.putNumber("Shooter Encoder", shooterEncoder.get());
-    	SmartDashboard.putNumber("Arm Encoder", arm.getEncPosition());
-    	SmartDashboard.putBoolean("Lower Limit", lowerLimitSwitch.get());
-    	SmartDashboard.putBoolean("Upper Limit", upperLimitSwitch.get());
-    	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
-    	SmartDashboard.putNumber("ActualShooterSpeed", shooterCounter.getRateInRPMs());
-    	SmartDashboard.putString("Intake", intakeOn);
-    	
-    	//update PID constants to Smart Dashboard values
-    	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"));
-    	
-    }
-    
-    public void testPeriodic() {
-    	LiveWindow.run();
-    }
-    
-   
-  
-    
-    //function to tank-drive robot given speed values
-    public void driveRobot(double left, double right) {
-			rDrive1.set(-right);
-			rDrive2.set(-right);
-			// Values are multiplied by -1 to ensure that the motors on the right
-			// spin opposite the motors on the left.
-			lDrive1.set(left);
-			lDrive2.set(left);
-    	
-
-	}
-    
-    public boolean shooterIsAtSpeed() {
-    	double actualSpeed = Math.abs(SmartDashboard.getNumber("ActualShooterSpeed"));
-    	double targetSpeed = Math.abs(SmartDashboard.getNumber("TargetShooterSpeed"));
-    	
-    	if(Math.abs(targetSpeed - actualSpeed) < 100) {
-    		return true;
-    	}
-    	
-    	return false;
-    }
-    
-    public void setIntakeSpeed() {
-    	//if the left trigger (bottom) is pressed, decrease intakeSpeed by 0.2
-    	if(stick.getRawButton(7)) {
-    		if(!lTriggerPressed && (shooterSpeed > -1)){
-    			lTriggerPressed = true;
-    			intakeSpeed -= 0.2;
-    			
-    		}
-    	} else {
-    		lTriggerPressed = false;
-    	}
-    	
-    	//if the left bumper (top) is pressed, increase intakeSpeed by 0.2
-    	if(stick.getRawButton(5)) {
-    		if(!lBumperPressed && (shooterSpeed < 1)){
-    			lBumperPressed = true;
-    			intakeSpeed += 0.2;
-    		}
-    	}
-    	else {
-    		lBumperPressed = false;
-    	}
     }
     
     public void setShooterSpeed() {
-    	
-    	//if the right trigger (bottom) is pressed, decrease shooterSpeed by 0.2
-    	if(stick.getRawButton(8)) {
-    		if(!rTriggerPressed && (shooterSpeed > -1)){
-    			rTriggerPressed = true;
-    			shooterSpeed -= 0.2;
+    	//if the X button is pressed, use PID to drive shooter wheel
+    	if(pidState.updateState(stick.getRawButton(1))) {
+    		System.out.println("Updated button");
+    		if(pidState.switchEnabled()) {
+    			System.out.println("Shooter PID should be on");
+    			shooterSpeedControl.enableLog("ShootPID.csv");
+    			shooterSpeedControl.enable();
+    			shooterSpeedControl.setSetpointInRPMs(SmartDashboard.getNumber("TargetShooterSpeed"));
     			
+    			tankDriveEnabled = false;
+    			
+    		} else {
+    			System.out.println("Shooter PID should be off");
+    			shooterSpeedControl.disable();
+    			shooterSpeedControl.reset();
+        		shooterSpeedControl.closeLog();
+    			
+        		tankDriveEnabled = true;
+        		
     		}
-    	} else {
-    		rTriggerPressed = false;
     	}
-    	
-    	//if the right bumper (top) is pressed, increase shooterSpeed by 0.2
-    	if(stick.getRawButton(6)) {
-    		if(!rBumperPressed && (shooterSpeed < 1)){
-    			rBumperPressed = true;
-    			shooterSpeed += 0.2;
-    		}
+    }
+    
+    public void setArmSpeed() {
+    	//set the arm speed using the Y and A buttons
+    	if(stick.getRawButton(6)/* && !upperLimitSwitch.get()*/){
+    		armSpeed = 0.55;
+    	}
+    	else if(stick.getRawButton(5)/* && !lowerLimitSwitch.get()*/){
+    		armSpeed = -0.45;
     	}
     	else {
-    		rBumperPressed = false;
+    		armSpeed = 0.0;
     	}
     }
     
@@ -498,8 +476,8 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK creations
     //create objects to run drive system
     public void createDriveObjects() {
-    	lDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
-    	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
+    	lDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
+    	rDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
     	lDriveEncoder.reset();
     	rDriveEncoder.reset();
     	
@@ -514,8 +492,6 @@ public class Robot extends IterativeRobot {
     	rDrive2 = new VictorSP(3);
     	
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroPIDOutput());
-    	
-    	pidState = new ToggleSwitch();
     	
     }
     
@@ -543,16 +519,22 @@ public class Robot extends IterativeRobot {
     	shooterCounter.setPIDSourceType(PIDSourceType.kDisplacement);
     	
     	shooterSpeedControl = new ATM2016PIDController(-0.0001, -0.0000005, 0.0, 0.0, shooterCounter, shooter, 0.01);
-    	shooterSpeedControl.setOutputRange(-1.0, 0.0);  	
+    	shooterSpeedControl.setOutputRange(-1.0, 0.0);  
+    	
+    	pidState = new ToggleSwitch();
     }
     
-    //create objects to run the shooter arm
+    //create objects to run the arm system
     public void createArmObjects() {
     	upperLimitSwitch = new DigitalInput(9);
     	lowerLimitSwitch = new DigitalInput(8);
     	
     	arm = new CANTalon(0);
     	
+    	armEncoder = new CANPIDSource(arm);
+    	armControl = new ATM2016PIDController(0.0, 0.0, 0.0, 0.0, armEncoder, arm, 0.01);
+    	
+    	armState = new ToggleSwitch();
     	encoderResetState = new ToggleSwitch();
     	
     }
@@ -577,6 +559,8 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("arm", 0);
     	SmartDashboard.putNumber("Arm Speed", 0.0);
     	
+    	SmartDashboard.putNumber("Arm Target", 0.0);
+    	
     	
     }
     
@@ -597,6 +581,7 @@ public class Robot extends IterativeRobot {
 		
     }
     
+    //create objects to run the trigger system
     public void createTriggerObjects() {
     	trigger = new Servo(9);
     	trigger.setAngle(110);

@@ -16,7 +16,11 @@ public class CANPIDSource implements PIDSource {
 	public double pidGet() {
 		return m_talon.getEncPosition();
 	}
-
+	
+	public void reset() {
+		m_talon.setEncPosition(0);
+	}
+	
 	@Override
 	public void setPIDSourceType(PIDSourceType pidSource) {
 		// TODO Auto-generated method stub
