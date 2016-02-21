@@ -230,9 +230,6 @@ public class Robot extends IterativeRobot {
     	if(stick.getRawButton(BBUTTON) && shooterIsAtSpeed() && armEncoder.get() < (MIDSETPOINT-OFFSET)){
     		trigger.setAngle(TRIGGERONPOSITION);
     		
-    		if(intakeSpeed != 0.0) {
-    			intakeSpeed = 0.0;
-    		}
     	}
     	else{
     		trigger.setAngle(TRIGGEROFFPOSITION);
@@ -288,11 +285,13 @@ public class Robot extends IterativeRobot {
     	if(armUpState.updateState(stick.getRawButton(RBUMPER))) {
     		if(armEncoder.get() < (MIDSETPOINT + OFFSET)) {
     			disableArmPid();
+    			turnIntakeOff();
     			armControl.setSetpoint(SHOOTSETPOINT);
     			enableArmPid();
     			
     		} else {
     			disableArmPid();
+    			turnIntakeOff();
     			armControl.setSetpoint(MIDSETPOINT);
     			enableArmPid();
     		}
@@ -424,12 +423,16 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
-    	if(intakeEnableState.updateState(stick.getRawButton(LTRIGGER))) {
-    		intakeSpeed = 0.0;
-    		intakeOn = "Off";
-    		intakeState.reset();
+    	if(intakeEnableState.updateState(stick.getRawButton(LTRIGGER)) ) {
+    		turnIntakeOff();
     		
     	}
+    }
+    
+    public void turnIntakeOff(){
+		intakeSpeed = 0.0;
+		intakeOn = "Off";
+		intakeState.reset();
     }
     
     public void setShooterSpeed() {
