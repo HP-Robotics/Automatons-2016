@@ -319,13 +319,15 @@ public class Robot extends IterativeRobot {
     		manualArmEnabled = false;
     	}
     	
-    	if(armEncoder.get() < (MIDSETPOINT-OFFSET) && tankDriveEnabled) {
-    		tankDriveEnabled = false;
-    		slowDriveEnabled = true;
-    		
-    	} else if(armEncoder.get() > (MIDSETPOINT-OFFSET) && !tankDriveEnabled) {
-    		tankDriveEnabled = true;
-    		slowDriveEnabled = false;
+    	if (!gyroDrive) {
+    		if(armEncoder.get() < (MIDSETPOINT-OFFSET) && tankDriveEnabled) {
+    			tankDriveEnabled = false;
+    			slowDriveEnabled = true;
+
+    		} else if(armEncoder.get() > (MIDSETPOINT-OFFSET) && !tankDriveEnabled) {
+    			tankDriveEnabled = true;
+    			slowDriveEnabled = false;
+    		}
     	}
     	
     	//calculate motor speeds
@@ -592,12 +594,21 @@ public class Robot extends IterativeRobot {
     	
     }
     public void goGyro (){
+    	if(armEncoder.get() < (MIDSETPOINT-OFFSET)){
+    		gyroDrive = false;
+    		
+    		turnControl.disable();
+    		//turnControl.closeLog();
+    		turnControl.reset();
+    		return;
+    	}
     	if((stick.getPOV() >= 0 && stick.getPOV() <= 45) || (stick.getPOV()>=315)) {
     		goNow(0.7, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.5, 0.5);
     		if(!gyroDrive){
     			gyroReset();
     			gyroDrive = true;
     			tankDriveEnabled = false;
+    			slowDriveEnabled = false;
     		}
     		
     	} else if(stick.getPOV() >= 135 && stick.getPOV()<= 225) {
@@ -606,6 +617,7 @@ public class Robot extends IterativeRobot {
     			gyroReset();
     			gyroDrive = true;
     			tankDriveEnabled = false;
+    			slowDriveEnabled = false;
     		}
     	}else if(stick.getPOV() == 90) {
     		if(!gyroDrive){
@@ -616,6 +628,7 @@ public class Robot extends IterativeRobot {
     			
     			gyroDrive = true;
     			tankDriveEnabled = false;
+    			slowDriveEnabled = false;
     		}
     	} else if(stick.getPOV() == 270) {
     		if(!gyroDrive){
@@ -626,9 +639,9 @@ public class Robot extends IterativeRobot {
     			
     			gyroDrive = true;
     			tankDriveEnabled = false;
+    			slowDriveEnabled = false;
     		}
     	} else if(gyroDrive) {
-    		tankDriveEnabled = true;
     		gyroDrive = false;
     		
     		turnControl.disable();
@@ -666,8 +679,8 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK creations
     //create objects to run drive system
     public void createDriveObjects() {
-    	lDriveEncoder = new Encoder(2, 3, false, EncodingType.k4X);
-    	rDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
+    	lDriveEncoder = new Encoder(0, 1, false, EncodingType.k4X);
+    	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
     	lDriveEncoder.reset();
     	rDriveEncoder.reset();
     	
@@ -676,10 +689,10 @@ public class Robot extends IterativeRobot {
     	//calibrate gyro
     	gyro.calibrate();
     	
-    	lDrive1 = new VictorSP(0);
-    	lDrive2 = new VictorSP(1);
-    	rDrive1 = new VictorSP(2);
-    	rDrive2 = new VictorSP(3);
+    	lDrive1 = new VictorSP(2);
+    	lDrive2 = new VictorSP(3);
+    	rDrive1 = new VictorSP(0);
+    	rDrive2 = new VictorSP(1);
     	
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
     	
