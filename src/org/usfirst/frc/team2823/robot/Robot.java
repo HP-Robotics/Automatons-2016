@@ -101,6 +101,24 @@ public class Robot extends IterativeRobot {
 	
 	ToggleSwitch encoderResetState;
 	
+	/*declare ~magic~ numbers*/
+	static final int SHOOTSETPOINT = -34;
+	static final int MIDSETPOINT = 1800;
+	static final int INTAKESETPOINT = 2350;
+	static final int OFFSET = 100;
+	
+	static final int TRIGGEROFFPOSITION = 110;
+	static final int TRIGGERONPOSITION = 80;
+	
+	static final int XBUTTON = 1;
+	static final int ABUTTON = 2;
+	static final int BBUTTON = 3;
+	static final int YBUTTON = 4;
+	static final int LBUMPER = 5;
+	static final int RBUMPER = 6;
+	static final int LTRIGGER = 7;
+	static final int RTRIGGER = 8;
+	
 	/* this class tracks a mode switch, e.g. press X to switch
 	 * to PID drive, press again to switch back to tank drive */
 	static class ToggleSwitch {
@@ -209,19 +227,19 @@ public class Robot extends IterativeRobot {
     public void teleopPeriodic() {
     	
     	//run the trigger only if the shooter wheel is at speed
-    	if(stick.getRawButton(3) && shooterIsAtSpeed() && armEncoder.get() < 1700){
-    		trigger.setAngle(80);
+    	if(stick.getRawButton(BBUTTON) && shooterIsAtSpeed() && armEncoder.get() < (MIDSETPOINT-OFFSET)){
+    		trigger.setAngle(TRIGGERONPOSITION);
     		
     		if(intakeSpeed != 0.0) {
     			intakeSpeed = 0.0;
     		}
     	}
     	else{
-    		trigger.setAngle(110);
+    		trigger.setAngle(TRIGGEROFFPOSITION);
     	}
     	
     	//Y button
-    	/*if(stick.getRawButton(4)) {
+    	/*if(stick.getRawButton(y)) {
     		if(!drivePIDEnabled) {
     			drivePIDEnabled = true;
     			tankDriveEnabled = false;
@@ -246,7 +264,7 @@ public class Robot extends IterativeRobot {
     	
     	/*
     	//use Y button to enable/disable arm PID
-    	if(stick.getRawButton(4)) {
+    	if(stick.getRawButton(y)) {
     		if(manualArmEnabled) {
     			//turn PID on and drive to setpoint
     			System.out.println("Arm PID should be on");
@@ -267,33 +285,33 @@ public class Robot extends IterativeRobot {
     		}
     	}*/
     	
-    	if(armUpState.updateState(stick.getRawButton(6))) {
-    		if(armEncoder.get() < 1900) {
+    	if(armUpState.updateState(stick.getRawButton(RBUMPER))) {
+    		if(armEncoder.get() < (MIDSETPOINT + OFFSET)) {
     			disableArmPid();
-    			armControl.setSetpoint(-34);
+    			armControl.setSetpoint(SHOOTSETPOINT);
     			enableArmPid();
     			
     		} else {
     			disableArmPid();
-    			armControl.setSetpoint(1800);
+    			armControl.setSetpoint(MIDSETPOINT);
     			enableArmPid();
     		}
     	}
     	
-    	if(armDownState.updateState(stick.getRawButton(8))) {
-    		if(armEncoder.get() < 1700) {
+    	if(armDownState.updateState(stick.getRawButton(RTRIGGER))) {
+    		if(armEncoder.get() < (MIDSETPOINT-OFFSET)) {
     			disableArmPid();
-    			armControl.setSetpoint(1800);
+    			armControl.setSetpoint(MIDSETPOINT);
     			enableArmPid();
     			
     		} else {
     			disableArmPid();
-    			armControl.setSetpoint(2350);
+    			armControl.setSetpoint(INTAKESETPOINT);
     			enableArmPid();
     		}
     	}
     	
-    	if(stick.getRawButton(4) && !manualArmEnabled) {
+    	if(stick.getRawButton(YBUTTON) && !manualArmEnabled) {
     		disableArmPid();
     		armControl.closeLog();
     		
@@ -301,11 +319,11 @@ public class Robot extends IterativeRobot {
     		manualArmEnabled = false;
     	}
     	
-    	if(armEncoder.get() < 1700 && tankDriveEnabled) {
+    	if(armEncoder.get() < (MIDSETPOINT-OFFSET) && tankDriveEnabled) {
     		tankDriveEnabled = false;
     		slowDriveEnabled = true;
     		
-    	} else if(armEncoder.get() > 1700 && !tankDriveEnabled) {
+    	} else if(armEncoder.get() > (MIDSETPOINT-OFFSET) && !tankDriveEnabled) {
     		tankDriveEnabled = true;
     		slowDriveEnabled = false;
     	}
@@ -327,9 +345,9 @@ public class Robot extends IterativeRobot {
     	
     	goGyro();
     	if(tankDriveEnabled) {
-    		driveRobot(stick.getRawAxis(1) * -0.75, stick.getRawAxis(3) * -0.75);
+    		driveRobot(stick.getRawAxis(XBUTTON) * -0.75, stick.getRawAxis(BBUTTON) * -0.75);
     	} else if(slowDriveEnabled) {
-    		driveRobot(stick.getRawAxis(1) * -0.1, stick.getRawAxis(3) * -0.1);
+    		driveRobot(stick.getRawAxis(XBUTTON) * -0.1, stick.getRawAxis(BBUTTON) * -0.1);
     	}
     	
     	//send data to Smart Dashboard
@@ -392,7 +410,7 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK set motor speeds
     public void setIntakeSpeed() {
     	//set intake using left trigger and left bumper
-    	if(intakeState.updateState(stick.getRawButton(5))) {
+    	if(intakeState.updateState(stick.getRawButton(LBUMPER))) {
     		System.out.println("Updated button");
     		if(intakeState.switchEnabled()) {
     			intakeSpeed = -1.0;
@@ -404,7 +422,7 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
-    	if(intakeEnableState.updateState(stick.getRawButton(7))) {
+    	if(intakeEnableState.updateState(stick.getRawButton(LTRIGGER))) {
     		intakeSpeed = 0.0;
     		intakeOn = "Off";
     		intakeState.reset();
@@ -414,7 +432,7 @@ public class Robot extends IterativeRobot {
     
     public void setShooterSpeed() {
     	//if the X button is pressed, use PID to drive shooter wheel
-    	if(pidState.updateState(stick.getRawButton(1))) {
+    	if(pidState.updateState(stick.getRawButton(XBUTTON))) {
     		System.out.println("Updated button");
     		if(pidState.switchEnabled()) {
     			System.out.println("Shooter PID should be on");
@@ -438,10 +456,10 @@ public class Robot extends IterativeRobot {
     
     public void setArmSpeed() {
     	//set the arm speed using the left and right bumper
-    	if(stick.getRawButton(6) && !upperLimitSwitch.get()){
+    	if(stick.getRawButton(RBUMPER) && !upperLimitSwitch.get()){
     		armSpeed = -SmartDashboard.getNumber("Arm Speed");
     	}
-    	else if(stick.getRawButton(8)/* && !lowerLimitSwitch.get()*/){
+    	else if(stick.getRawButton(RTRIGGER)/* && !lowerLimitSwitch.get()*/){
     		armSpeed = SmartDashboard.getNumber("Arm Speed");
     	}
     	else {
@@ -760,6 +778,6 @@ public class Robot extends IterativeRobot {
     //create objects to run the trigger system
     public void createTriggerObjects() {
     	trigger = new Servo(6);
-    	trigger.setAngle(110);
+    	trigger.setAngle(TRIGGEROFFPOSITION);
     }
  }
