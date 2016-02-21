@@ -79,6 +79,10 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   
   private boolean m_logEnabled = false;
 
+  private double m_initPower = 0.0;
+  private double m_initMillis = 0.0;
+  private double m_initTime;
+  
   /**
    * Tolerance is the type of tolerance used to specify if the PID controller is
    * on target.
@@ -255,7 +259,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
    * This should only be called by the PIDTask and is created during
    * initialization.
    */
-  //TODO Calculate 
+  //QUICKCLICK calculate 
   protected void calculate() {
 	
     boolean enabled;
@@ -279,79 +283,84 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       synchronized (this) {
         input = pidInput.pidGet();
       }
-      synchronized (this) {
-        m_error = m_setpoint - input;
-        if (m_continuous) {
-          if (Math.abs(m_error) > (m_maximumInput - m_minimumInput) / 2) {
-            if (m_error > 0) {
-              m_error = m_error - m_maximumInput + m_minimumInput;
-            } else {
-              m_error = m_error + m_maximumInput - m_minimumInput;
-            }
-          }
-        }
-
-        if (m_pidInput.getPIDSourceType().equals(PIDSourceType.kRate)) {
-          if (m_P != 0) {
-            double potentialPGain = (m_totalError + m_error) * m_P;
-            if (potentialPGain < m_maximumOutput) {
-              if (potentialPGain > m_minimumOutput) {
-                m_totalError += m_error;
-              } else {
-                m_totalError = m_minimumOutput / m_P;
-              }
-            } else {
-              m_totalError = m_maximumOutput / m_P;
-            }
-
-            m_result = m_P * m_totalError + m_D * m_error +
-                       calculateFeedForward();
-            
-            m_POutput = m_P * m_totalError;
-            m_IOutput = 0.0;
-            m_DOutput = m_D * m_error;
-            m_FOutput = calculateFeedForward();
-          }
-        }
-        else {
-          if (m_I != 0) {
-            double potentialIGain = (m_totalError + m_error) * m_I;
-            if (potentialIGain < m_maximumOutput) {
-              if (potentialIGain > m_minimumOutput) {
-                m_totalError += m_error;
-              } else {
-                m_totalError = m_minimumOutput / m_I;
-              }
-            } else {
-              m_totalError = m_maximumOutput / m_I;
-            }
-          }
-
-          m_result = m_P * m_error + m_I * m_totalError +
-                     m_D * (m_error - m_prevError) + calculateFeedForward();
-          
-          m_POutput = m_P * m_error;
-          m_IOutput = m_I * m_totalError;
-          m_DOutput = m_D * (m_error - m_prevError);
-          m_FOutput = calculateFeedForward();
-        }
-        m_prevError = m_error;
-
-        if (m_result > m_maximumOutput) {
-          m_result = m_maximumOutput;
-        } else if (m_result < m_minimumOutput) {
-          m_result = m_minimumOutput;
-        }
-        pidOutput = m_pidOutput;
-        result = m_result;
-
-        // Update the buffer.
-        m_buf.push(m_error);
-        m_bufTotal += m_error;
-        // Remove old elements when the buffer is full.
-        if (m_buf.size() > m_bufLength) {
-          m_bufTotal -= m_buf.pop();
-        }
+      
+      if((Timer.getFPGATimestamp() - m_initTime) < m_initMillis) {
+    	  result = m_initPower;
+      } else {
+	      synchronized (this) {
+	        m_error = m_setpoint - input;
+	        if (m_continuous) {
+	          if (Math.abs(m_error) > (m_maximumInput - m_minimumInput) / 2) {
+	            if (m_error > 0) {
+	              m_error = m_error - m_maximumInput + m_minimumInput;
+	            } else {
+	              m_error = m_error + m_maximumInput - m_minimumInput;
+	            }
+	          }
+	        }
+	
+	        if (m_pidInput.getPIDSourceType().equals(PIDSourceType.kRate)) {
+	          if (m_P != 0) {
+	            double potentialPGain = (m_totalError + m_error) * m_P;
+	            if (potentialPGain < m_maximumOutput) {
+	              if (potentialPGain > m_minimumOutput) {
+	                m_totalError += m_error;
+	              } else {
+	                m_totalError = m_minimumOutput / m_P;
+	              }
+	            } else {
+	              m_totalError = m_maximumOutput / m_P;
+	            }
+	
+	            m_result = m_P * m_totalError + m_D * m_error +
+	                       calculateFeedForward();
+	            
+	            m_POutput = m_P * m_totalError;
+	            m_IOutput = 0.0;
+	            m_DOutput = m_D * m_error;
+	            m_FOutput = calculateFeedForward();
+	          }
+	        }
+	        else {
+	          if (m_I != 0) {
+	            double potentialIGain = (m_totalError + m_error) * m_I;
+	            if (potentialIGain < m_maximumOutput) {
+	              if (potentialIGain > m_minimumOutput) {
+	                m_totalError += m_error;
+	              } else {
+	                m_totalError = m_minimumOutput / m_I;
+	              }
+	            } else {
+	              m_totalError = m_maximumOutput / m_I;
+	            }
+	          }
+	
+	          m_result = m_P * m_error + m_I * m_totalError +
+	                     m_D * (m_error - m_prevError) + calculateFeedForward();
+	          
+	          m_POutput = m_P * m_error;
+	          m_IOutput = m_I * m_totalError;
+	          m_DOutput = m_D * (m_error - m_prevError);
+	          m_FOutput = calculateFeedForward();
+	        }
+	        m_prevError = m_error;
+	
+	        if (m_result > m_maximumOutput) {
+	          m_result = m_maximumOutput;
+	        } else if (m_result < m_minimumOutput) {
+	          m_result = m_minimumOutput;
+	        }
+	        pidOutput = m_pidOutput;
+	        result = m_result;
+	
+	        // Update the buffer.
+	        m_buf.push(m_error);
+	        m_bufTotal += m_error;
+	        // Remove old elements when the buffer is full.
+	        if (m_buf.size() > m_bufLength) {
+	          m_bufTotal -= m_buf.pop();
+	        }
+	      }
       }
 
       pidOutput.pidWrite(result);
@@ -724,6 +733,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   @Override
   public synchronized void enable() {
     m_enabled = true;
+    m_initTime = Timer.getFPGATimestamp();
 
     if (table != null) {
       table.putBoolean("enabled", true);
@@ -816,7 +826,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     }
   }
   
-  //TODO This is the enableLog function
+  //QUICKCLICK enableLog
   public void enableLog(String file) {
 	  try {
   		m_f = new File("home/lvuser/" + file);
@@ -851,6 +861,12 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 	  } catch(IOException e) {
 		  
 	  }
+  }
+  
+  //QUICKCLICK setInitialPower
+  public void setInitalPower(double power, double timeMillis) {
+	  m_initPower = power;
+	  m_initMillis = timeMillis;
   }
 
   /**

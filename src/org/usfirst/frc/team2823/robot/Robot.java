@@ -13,18 +13,14 @@ import edu.wpi.first.wpilibj.CANTalon;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.Encoder;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.command.Command;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
+import java.net.*;
 
 public class Robot extends IterativeRobot {
 	
@@ -57,9 +53,7 @@ public class Robot extends IterativeRobot {
 	ToggleSwitch intakeState;
 	ToggleSwitch intakeEnableState;
 	
-	/*declare shooter-related objects and variables*/
-	Encoder shooterEncoder;
-	
+	/*declare shooter-related objects and variables*/	
 	Talon shooter;
 	
 	ATM2016Counter shooterCounter;
@@ -79,6 +73,7 @@ public class Robot extends IterativeRobot {
 	ToggleSwitch armState;
 	
 	double armSpeed = 0.0;
+	boolean manualArmEnabled = true;
 	
 	/*declare trigger-related objects and variables*/
 	Servo trigger;
@@ -90,14 +85,6 @@ public class Robot extends IterativeRobot {
 
 	/*declare joystick and button press-related objects*/
 	Joystick stick;
-	
-	//boolean aButtonPressed = false;
-	//boolean yButtonPressed = false;
-	//boolean xButtonPressed = false;
-	//boolean lBumperPressed = false;
-	//boolean lTriggerPressed = false;
-	//boolean rBumperPressed = false;
-	//boolean rTriggerPressed = false;
 	
 	ToggleSwitch encoderResetState;
 	
@@ -133,9 +120,9 @@ public class Robot extends IterativeRobot {
 		}
 	}
 	
-	/*
-	public static void main(String[] blah)
+	/*public static void main(String[] blah)
 	{
+		
 		System.out.println("hi");
 		ToggleSwitch s = new ToggleSwitch();
 		System.out.println("enabled:" + s.switchEnabled());
@@ -145,8 +132,10 @@ public class Robot extends IterativeRobot {
 		b = s.updateState(false);
 		System.out.println("switched: " + b);
 		System.out.println("enabled:" + s.switchEnabled());
-	}
-	*/
+		
+		getHttpData("https://httpbin.org/get");
+	}*/
+	
 	
 	//QUICKCLICK robotInit
     public void robotInit() {
@@ -190,6 +179,7 @@ public class Robot extends IterativeRobot {
     	intakeSpeed = 0.0;
     	armSpeed = 0.0;
     	
+    	arm.enableBrakeMode(false);
     	arm.enable();
     	
     	//reset gyro
@@ -208,13 +198,13 @@ public class Robot extends IterativeRobot {
     		trigger.setAngle(110);
     	}
     	
-    	//reset arm encoder when B button is pressed
+    	/*//reset arm encoder when B button is pressed
     	if(encoderResetState.updateState(stick.getRawButton(3))) {
     		armEncoder.reset();
-    	}
+    	}*/
     	
     	//use A button to enable/disable arm PID
-    	if(armState.updateState(stick.getRawButton(5))) {
+    	if(armState.updateState(stick.getRawButton(2))) {
     		if(armState.switchEnabled()) {
     			//turn PID on and drive to setpoint
     			System.out.println("Arm PID should be on");
@@ -222,20 +212,26 @@ public class Robot extends IterativeRobot {
     			armControl.enable();
     			armControl.setSetpoint(SmartDashboard.getNumber("Arm Target"));
     			
+    			manualArmEnabled = false;
+    			
     		} else {
     			System.out.println("Arm PID should be off");
     			armControl.disable();
     			armControl.reset();
     			armControl.closeLog();
+    			
+    			manualArmEnabled = true;
     		}
-    		
     	}
     	
     	//calculate motor speeds
     	setIntakeSpeed();
     	setShooterSpeed();
-    	//setArmSpeed();
     	
+    	//if manual drive of the arm is allowed, set the arm speed
+    	if(manualArmEnabled) {
+    		setArmSpeed();
+    	}
     	//drive motors using calculated speeds
     	intake.set(intakeSpeed);
     	shooter.set(shooterSpeed);
@@ -253,14 +249,12 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Gyro Rotation", gyro.getAngle());
     	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
     	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
-    	SmartDashboard.putNumber("Shooter Encoder", shooterEncoder.get());
     	SmartDashboard.putNumber("Arm Encoder", arm.getEncPosition());
     	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
     	SmartDashboard.putNumber("ActualShooterSpeed", shooterCounter.getRateInRPMs());
     	SmartDashboard.putBoolean("Lower Limit", lowerLimitSwitch.get());
     	SmartDashboard.putBoolean("Upper Limit", upperLimitSwitch.get());
     	SmartDashboard.putString("Intake", intakeOn);
-    	
     	
     	if(shooterSpeedControl.isEnabled()) {
     		SmartDashboard.putNumber("Error", shooterSpeedControl.getAvgError());
@@ -352,10 +346,12 @@ public class Robot extends IterativeRobot {
     public void setArmSpeed() {
     	//set the arm speed using the Y and A buttons
     	if(stick.getRawButton(6)/* && !upperLimitSwitch.get()*/){
-    		armSpeed = 0.55;
+    		//armSpeed = 0.55;
+    		armSpeed = SmartDashboard.getNumber("Arm Speed");
     	}
     	else if(stick.getRawButton(5)/* && !lowerLimitSwitch.get()*/){
-    		armSpeed = -0.45;
+    		//armSpeed = -0.45;
+    		armSpeed = -SmartDashboard.getNumber("Arm Speed");
     	}
     	else {
     		armSpeed = 0.0;
@@ -473,6 +469,32 @@ public class Robot extends IterativeRobot {
     	}
     }
     
+    //QUICKCLICK getHttpData
+    public static void getHttpData(String address) {
+    	try {
+    		URL url = new URL(address);
+    		
+    		try {
+    			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    			connection.setRequestMethod("GET");
+    			connection.connect();
+    			
+    			InputStream stream = connection.getInputStream();
+    			
+    			 BufferedReader in = new BufferedReader(new InputStreamReader(stream));
+    			 
+    			 String inputLine;
+    			 while((inputLine = in.readLine()) != null) {
+    				 System.out.println(inputLine);
+    			 }
+    			 
+    			 in.close();
+    			
+    		} catch(IOException e) {}
+    		
+    	} catch(MalformedURLException e) {}
+    }
+    
     //QUICKCLICK creations
     //create objects to run drive system
     public void createDriveObjects() {
@@ -506,15 +528,11 @@ public class Robot extends IterativeRobot {
     
     //create objects to run shooter system
     public void createShooterObjects() {
-    	shooterEncoder = new Encoder(4, 5, true, EncodingType.k4X);
-    	shooterEncoder.setPIDSourceType(PIDSourceType.kRate);
-    	shooterEncoder.setReverseDirection(true);
-    	shooterEncoder.reset();
     	
     	shooter = new Talon(5);
     	
     	shooterCounter = new ATM2016Counter();
-    	shooterCounter.setUpSource(6);
+    	shooterCounter.setUpSource(4);
     	shooterCounter.setUpSourceEdge(true, false);
     	shooterCounter.setPIDSourceType(PIDSourceType.kDisplacement);
     	
@@ -526,8 +544,8 @@ public class Robot extends IterativeRobot {
     
     //create objects to run the arm system
     public void createArmObjects() {
-    	upperLimitSwitch = new DigitalInput(9);
-    	lowerLimitSwitch = new DigitalInput(8);
+    	upperLimitSwitch = new DigitalInput(8);
+    	lowerLimitSwitch = new DigitalInput(7);
     	
     	arm = new CANTalon(0);
     	
@@ -583,7 +601,7 @@ public class Robot extends IterativeRobot {
     
     //create objects to run the trigger system
     public void createTriggerObjects() {
-    	trigger = new Servo(9);
+    	trigger = new Servo(6);
     	trigger.setAngle(110);
     }
  }
