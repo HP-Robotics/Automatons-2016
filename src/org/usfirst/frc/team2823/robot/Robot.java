@@ -5,10 +5,12 @@ import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PIDOutput;
+import edu.wpi.first.wpilibj.PIDSource;
 import edu.wpi.first.wpilibj.PIDSourceType;
 import edu.wpi.first.wpilibj.SPI.Port;
 import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.Talon;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.CANTalon;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
@@ -36,11 +38,21 @@ public class Robot extends IterativeRobot {
 	VictorSP rDrive2;
 	
 	ATM2016PIDController turnControl;
+	ATM2016PIDController gyroDriveControl;
+	ATM2016PIDController shortDriveControl;
 	
 	double leftSpeed;
 	double rightSpeed;
 	boolean gyroDrive = false;
+	boolean drivePIDEnabled = false;
 	boolean tankDriveEnabled = true;
+	boolean slowDriveEnabled = false;
+	
+	static final double ENCODER_RESOLUTION = 2048;
+	static final double FUDGE_FACTOR = (194.0/196.0);
+	static final double R = (5.875 * FUDGE_FACTOR);
+	//static final double DRIVE_RATIO = (1.786 / 4.032);
+	static final double DRIVE_RATIO = (1.432 / 3.826);
 	
 	ToggleSwitch pidState;
 	
@@ -67,10 +79,11 @@ public class Robot extends IterativeRobot {
 	
 	CANTalon arm;
 	
-	CANPIDSource armEncoder;
+	Encoder armEncoder;
 	ATM2016PIDController armControl;
 	
-	ToggleSwitch armState;
+	ToggleSwitch armUpState;
+	ToggleSwitch armDownState;
 	
 	double armSpeed = 0.0;
 	boolean manualArmEnabled = true;
@@ -179,6 +192,11 @@ public class Robot extends IterativeRobot {
     	intakeSpeed = 0.0;
     	armSpeed = 0.0;
     	
+    	lDriveEncoder.reset();
+    	rDriveEncoder.reset();
+    	armEncoder.reset();
+    	
+    	//disable arm braking
     	arm.enableBrakeMode(false);
     	arm.enable();
     	
@@ -191,21 +209,45 @@ public class Robot extends IterativeRobot {
     public void teleopPeriodic() {
     	
     	//run the trigger only if the shooter wheel is at speed
-    	if(stick.getRawButton(3) && shooterIsAtSpeed()){
+    	if(stick.getRawButton(3) && shooterIsAtSpeed() && armEncoder.get() < 1700){
     		trigger.setAngle(80);
+    		
+    		if(intakeSpeed != 0.0) {
+    			intakeSpeed = 0.0;
+    		}
     	}
     	else{
     		trigger.setAngle(110);
     	}
     	
-    	/*//reset arm encoder when B button is pressed
-    	if(encoderResetState.updateState(stick.getRawButton(3))) {
-    		armEncoder.reset();
+    	//Y button
+    	/*if(stick.getRawButton(4)) {
+    		if(!drivePIDEnabled) {
+    			drivePIDEnabled = true;
+    			tankDriveEnabled = false;
+    			
+    			lDriveEncoder.reset();
+    			rDriveEncoder.reset();
+    			
+    			gyroDriveControl.enableLog("gyroDrivePID.csv");
+    			gyroDriveControl.setInitialPower(SmartDashboard.getNumber("GyroDrive Initial Power"), SmartDashboard.getNumber("GyroDrive Initial Time (ms)"));
+    			gyroDriveControl.enable();
+    			gyroDriveControl.setSetpoint(SmartDashboard.getNumber("Gyro Drive Target"));
+    		}
+    	} else {
+    		if(drivePIDEnabled) {
+    			drivePIDEnabled = false;
+    			tankDriveEnabled = true;
+    			
+    			gyroDriveControl.disable();
+    			gyroDriveControl.closeLog();
+    		}
     	}*/
     	
-    	//use A button to enable/disable arm PID
-    	if(armState.updateState(stick.getRawButton(2))) {
-    		if(armState.switchEnabled()) {
+    	/*
+    	//use Y button to enable/disable arm PID
+    	if(stick.getRawButton(4)) {
+    		if(manualArmEnabled) {
     			//turn PID on and drive to setpoint
     			System.out.println("Arm PID should be on");
     			armControl.enableLog("armPID.csv");
@@ -213,8 +255,9 @@ public class Robot extends IterativeRobot {
     			armControl.setSetpoint(SmartDashboard.getNumber("Arm Target"));
     			
     			manualArmEnabled = false;
-    			
-    		} else {
+    		}
+    	} else {
+    		if(!manualArmEnabled) {
     			System.out.println("Arm PID should be off");
     			armControl.disable();
     			armControl.reset();
@@ -222,6 +265,49 @@ public class Robot extends IterativeRobot {
     			
     			manualArmEnabled = true;
     		}
+    	}*/
+    	
+    	if(armUpState.updateState(stick.getRawButton(6))) {
+    		if(armEncoder.get() < 1900) {
+    			disableArmPid();
+    			armControl.setSetpoint(-34);
+    			enableArmPid();
+    			
+    		} else {
+    			disableArmPid();
+    			armControl.setSetpoint(1800);
+    			enableArmPid();
+    		}
+    	}
+    	
+    	if(armDownState.updateState(stick.getRawButton(8))) {
+    		if(armEncoder.get() < 1700) {
+    			disableArmPid();
+    			armControl.setSetpoint(1800);
+    			enableArmPid();
+    			
+    		} else {
+    			disableArmPid();
+    			armControl.setSetpoint(2350);
+    			enableArmPid();
+    		}
+    	}
+    	
+    	if(stick.getRawButton(4) && !manualArmEnabled) {
+    		disableArmPid();
+    		armControl.closeLog();
+    		
+    	} else if(manualArmEnabled) {
+    		manualArmEnabled = false;
+    	}
+    	
+    	if(armEncoder.get() < 1700 && tankDriveEnabled) {
+    		tankDriveEnabled = false;
+    		slowDriveEnabled = true;
+    		
+    	} else if(armEncoder.get() > 1700 && !tankDriveEnabled) {
+    		tankDriveEnabled = true;
+    		slowDriveEnabled = false;
     	}
     	
     	//calculate motor speeds
@@ -231,6 +317,8 @@ public class Robot extends IterativeRobot {
     	//if manual drive of the arm is allowed, set the arm speed
     	if(manualArmEnabled) {
     		setArmSpeed();
+    	} else {
+    		
     	}
     	//drive motors using calculated speeds
     	intake.set(intakeSpeed);
@@ -238,8 +326,10 @@ public class Robot extends IterativeRobot {
     	arm.set(armSpeed);  
     	
     	goGyro();
-    	if(tankDriveEnabled){
-    		driveRobot(stick.getRawAxis(1)* -0.75, stick.getRawAxis(3)* -0.75);
+    	if(tankDriveEnabled) {
+    		driveRobot(stick.getRawAxis(1) * -0.75, stick.getRawAxis(3) * -0.75);
+    	} else if(slowDriveEnabled) {
+    		driveRobot(stick.getRawAxis(1) * -0.1, stick.getRawAxis(3) * -0.1);
     	}
     	
     	//send data to Smart Dashboard
@@ -249,7 +339,9 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Gyro Rotation", gyro.getAngle());
     	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
     	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
-    	SmartDashboard.putNumber("Arm Encoder", arm.getEncPosition());
+    	SmartDashboard.putNumber("Left Encoder (Inches)", driveEncoderToInches(lDriveEncoder.get()));
+    	
+    	SmartDashboard.putNumber("Arm Encoder", armEncoder.get());
     	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
     	SmartDashboard.putNumber("ActualShooterSpeed", shooterCounter.getRateInRPMs());
     	SmartDashboard.putBoolean("Lower Limit", lowerLimitSwitch.get());
@@ -262,7 +354,8 @@ public class Robot extends IterativeRobot {
     	
     	//update PID constants to Smart Dashboard values
     	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"));
-    	armControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
+    	armControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
+    	//gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
     	
     }
     
@@ -289,7 +382,7 @@ public class Robot extends IterativeRobot {
     	double actualSpeed = Math.abs(SmartDashboard.getNumber("ActualShooterSpeed"));
     	double targetSpeed = Math.abs(SmartDashboard.getNumber("TargetShooterSpeed"));
     	
-    	if(Math.abs(targetSpeed - actualSpeed) < 100) {
+    	if(Math.abs(targetSpeed - actualSpeed) < 250) {
     		return true;
     	}
     	
@@ -299,7 +392,7 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK set motor speeds
     public void setIntakeSpeed() {
     	//set intake using left trigger and left bumper
-    	if(intakeState.updateState(stick.getRawButton(7))) {
+    	if(intakeState.updateState(stick.getRawButton(5))) {
     		System.out.println("Updated button");
     		if(intakeState.switchEnabled()) {
     			intakeSpeed = -1.0;
@@ -311,7 +404,7 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
-    	if(intakeEnableState.updateState(stick.getRawButton(8))) {
+    	if(intakeEnableState.updateState(stick.getRawButton(7))) {
     		intakeSpeed = 0.0;
     		intakeOn = "Off";
     		intakeState.reset();
@@ -329,7 +422,7 @@ public class Robot extends IterativeRobot {
     			shooterSpeedControl.enable();
     			shooterSpeedControl.setSetpointInRPMs(SmartDashboard.getNumber("TargetShooterSpeed"));
     			
-    			tankDriveEnabled = false;
+    			//tankDriveEnabled = false;
     			
     		} else {
     			System.out.println("Shooter PID should be off");
@@ -337,50 +430,107 @@ public class Robot extends IterativeRobot {
     			shooterSpeedControl.reset();
         		shooterSpeedControl.closeLog();
     			
-        		tankDriveEnabled = true;
+        		//tankDriveEnabled = true;
         		
     		}
     	}
     }
     
     public void setArmSpeed() {
-    	//set the arm speed using the Y and A buttons
-    	if(stick.getRawButton(6)/* && !upperLimitSwitch.get()*/){
-    		//armSpeed = 0.55;
-    		armSpeed = SmartDashboard.getNumber("Arm Speed");
-    	}
-    	else if(stick.getRawButton(5)/* && !lowerLimitSwitch.get()*/){
-    		//armSpeed = -0.45;
+    	//set the arm speed using the left and right bumper
+    	if(stick.getRawButton(6) && !upperLimitSwitch.get()){
     		armSpeed = -SmartDashboard.getNumber("Arm Speed");
+    	}
+    	else if(stick.getRawButton(8)/* && !lowerLimitSwitch.get()*/){
+    		armSpeed = SmartDashboard.getNumber("Arm Speed");
     	}
     	else {
     		armSpeed = 0.0;
     	}
     }
     
-    public class DrivePIDOutput implements PIDOutput {
+    public class GyroDriveOutput implements PIDOutput {
 
 		@Override
 		public void pidWrite(double output) {
-			SmartDashboard.putNumber("Drive PIDOutput", output);
-			lDrive1.set(-output);
-			lDrive2.set(-output);
-			rDrive1.set(output);
-			rDrive2.set(output);
+			SmartDashboard.putNumber("Gyro Drive PIDOutput", output);
+			lDrive1.set(output);
+			lDrive2.set(output);
+			rDrive1.set(-output);
+			rDrive2.set(-output);
 		}
 
 	}
     
-    public class GyroPIDOutput implements PIDOutput {
+    public class GyroTurnOutput implements PIDOutput {
 
 		@Override
 		public void pidWrite(double output) {
-			SmartDashboard.putNumber("Gyro PIDOutput", output);
+			SmartDashboard.putNumber("Gyro Turn PIDOutput", output);
 			lDrive1.set(output);
 			lDrive2.set(output);
 			rDrive1.set(output);
 			rDrive2.set(output);
 		}
+	}
+    public class ArmOutput implements PIDOutput {
+
+  		@Override
+  		public void pidWrite(double output) {
+  			
+  			
+  			SmartDashboard.putNumber("Arm PIDOutput", output);
+  			arm.set(output);
+  		}
+  	}
+    
+    public class AverageEncoder implements PIDSource {
+		PIDSource leftSource;
+		PIDSource rightSource;
+
+		public AverageEncoder(PIDSource left, PIDSource right) {
+			leftSource = left;
+			rightSource = right;
+		}
+
+		@Override
+		public double pidGet() {
+			return driveEncoderToInches((leftSource.pidGet() + rightSource.pidGet()) / 2);
+		}
+
+		@Override
+		public void setPIDSourceType(PIDSourceType pidSource) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public PIDSourceType getPIDSourceType() {
+			// TODO Auto-generated method stub
+			return PIDSourceType.kDisplacement;
+		}
+	}
+    
+    public void enableArmPid() {
+		manualArmEnabled = false;
+		
+		armControl.enableLog("armPID.csv");
+		armControl.enable();
+    }
+    
+    public void disableArmPid() {
+		manualArmEnabled = true;
+		
+		armControl.disable();
+		//armControl.closeLog();
+    }
+    
+	public double driveInchesToEncoder(double i) {
+		return i * ENCODER_RESOLUTION / (2 * Math.PI * R * DRIVE_RATIO);
+	}
+
+	public double driveEncoderToInches(double e) {
+		return e * 2 * Math.PI * R * DRIVE_RATIO / (ENCODER_RESOLUTION);
 	}
     
     public void goNow(double outputMagnitude, double curve, double minimum, double sensitivity) {
@@ -498,7 +648,7 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK creations
     //create objects to run drive system
     public void createDriveObjects() {
-    	lDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
+    	lDriveEncoder = new Encoder(2, 3, false, EncodingType.k4X);
     	rDriveEncoder = new Encoder(0, 1, true, EncodingType.k4X);
     	lDriveEncoder.reset();
     	rDriveEncoder.reset();
@@ -513,7 +663,10 @@ public class Robot extends IterativeRobot {
     	rDrive1 = new VictorSP(2);
     	rDrive2 = new VictorSP(3);
     	
-    	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroPIDOutput());
+    	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
+    	
+    	//good PID values for 50 inches are P: 0.02, I: 0.00001, D:0.05
+    	gyroDriveControl = new ATM2016PIDController(0.0, 0.0, 0.0, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput());
     	
     }
     
@@ -549,10 +702,13 @@ public class Robot extends IterativeRobot {
     	
     	arm = new CANTalon(0);
     	
-    	armEncoder = new CANPIDSource(arm);
+    	armEncoder = new Encoder(5, 6, true, EncodingType.k4X);
+    	//armEncoder = new CANPIDSource(arm);
     	armControl = new ATM2016PIDController(0.0, 0.0, 0.0, 0.0, armEncoder, arm, 0.01);
+    	armControl.setRobot(this);
     	
-    	armState = new ToggleSwitch();
+    	armUpState = new ToggleSwitch();
+    	armDownState = new ToggleSwitch();
     	encoderResetState = new ToggleSwitch();
     	
     }
@@ -568,7 +724,7 @@ public class Robot extends IterativeRobot {
     	 * TgtShtrSpeed: 3300 far away (3 robot widths)
     	 */
     	SmartDashboard.putNumber("TargetShooterSpeed", 3300);
-    	SmartDashboard.putNumber("P", 0.0);
+    	SmartDashboard.putNumber("P", 0.002);
     	SmartDashboard.putNumber("I", 0.0);
     	SmartDashboard.putNumber("D", 0.0);
     	SmartDashboard.putNumber("F", 0.0);
@@ -576,8 +732,10 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("k_sensitivity", 0.5);
     	SmartDashboard.putNumber("arm", 0);
     	SmartDashboard.putNumber("Arm Speed", 0.0);
-    	
-    	SmartDashboard.putNumber("Arm Target", 0.0);
+    	SmartDashboard.putNumber("Gyro Drive Target", 0);
+    	SmartDashboard.putNumber("GyroDrive Initial Power", 0.0);
+    	SmartDashboard.putNumber("GyroDrive Initial Time (ms)", 0.0);
+    	SmartDashboard.putNumber("Arm Target", 0);
     	
     	
     }
