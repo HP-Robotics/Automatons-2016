@@ -194,6 +194,12 @@ public class Robot extends IterativeRobot {
     }
     
     public void autonomousInit() {
+    	//reset arm encoder and set PID target to 0 (keeps the arm upright)
+    	armEncoder.reset();
+    	
+    	armControl.setSetpoint(0);
+    	armControl.enable();
+    	
     	((AutoMode) autoChooser.getSelected()).autoInit();
     	
     }
@@ -215,10 +221,9 @@ public class Robot extends IterativeRobot {
     	//reset encoders
     	lDriveEncoder.reset();
     	rDriveEncoder.reset();
-    	armEncoder.reset();
     	
-    	//disable arm PID
-    	armControl.disable();
+    	//set arm PID to hold
+    	armControl.enable();
     	
     	//disable arm braking
     	arm.enableBrakeMode(false);
@@ -298,7 +303,7 @@ public class Robot extends IterativeRobot {
     		slowDriveEnabled = false;
     		
     		motionDriveControl.enableLog("motionControlPID.csv");
-    		motionDriveControl.setSetpoint(20);
+    		motionDriveControl.setSetpoint(driveInchesToEncoder(20));
     		motionDriveControl.enable();
     		
     	} else if(motionDriveEnabled) {
@@ -346,7 +351,7 @@ public class Robot extends IterativeRobot {
     		manualArmEnabled = false;
     	}
     	
-    	if (!gyroDrive) {
+    	if (!gyroDrive && !motionDriveEnabled) {
     		if(armEncoder.get() < (MIDSETPOINT-OFFSET) && tankDriveEnabled) {
     			tankDriveEnabled = false;
     			slowDriveEnabled = true;
@@ -786,6 +791,7 @@ public class Robot extends IterativeRobot {
     	arm = new CANTalon(0);
     	
     	armEncoder = new Encoder(5, 6, true, EncodingType.k4X);
+    	armEncoder.reset();
     	//armEncoder = new CANPIDSource(arm);
     	armControl = new ATM2016PIDController(0.004, 0.000075, 0.075, 0.0, armEncoder, arm, 0.01);
     	armControl.setRobot(this);
