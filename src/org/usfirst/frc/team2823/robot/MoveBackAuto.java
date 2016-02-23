@@ -10,7 +10,7 @@ public class MoveBackAuto extends AutoMode {
 
 	@Override
 	public void autoInit() {
-		double[] t = { 2.0, 1.0 };
+		double[] t = {3.0, 1.0};
 		setStageTimeouts(t);
 		robot.gyroReset();
 		startAuto();
@@ -23,10 +23,11 @@ public class MoveBackAuto extends AutoMode {
 		
 		switch (stage) {
 		case 0:
-			driveBack();
+			driveForward();
 			break;
 		case 1:
-			driveForward();
+			//driveForward();
+			robot.driveRobot(0.0, 0.0);
 			break;
 		}
 	}

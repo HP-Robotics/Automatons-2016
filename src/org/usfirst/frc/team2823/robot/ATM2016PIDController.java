@@ -36,10 +36,15 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 
   public static final double kDefaultPeriod = .05;
   private static int instances = 0;
+  private static final double OUTPUT_CLAMP_UP = -0.6;
+  private static final double OUTPUT_CLAMP_DOWN = 0.6;
   private double m_P; // factor for "proportional" control
   private double m_I; // factor for "integral" control
   private double m_D; // factor for "derivative" control
   private double m_F; // factor for feedforward term
+  private double m_A = 0.9;
+  private double m_kA;
+  private double m_kV;
   private double m_maximumOutput = 1.0; // |maximum output|
   private double m_minimumOutput = -1.0; // |minimum output|
   private double m_maximumInput = 0.0; // maximum input - limit setpoint to this
@@ -53,6 +58,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
                                      // integral calc
   private Tolerance m_tolerance; // the tolerance object used to check if on
                                  // target
+  private double m_filteredDifference = 0.0;
   private int m_bufLength = 1;
   private LinkedList<Double> m_buf;
   private double m_bufTotal = 0.0;
@@ -85,6 +91,21 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   
   private Robot robot;
   private boolean m_safeArm = false;
+  
+  private MotionWayPoint m_currentWaypoint;
+  private MotionWayPoint[] m_waypoints;
+  private boolean m_motionPlanEnabled = false;
+  private int m_prevWaypoint;
+  
+  /**
+   * Subclass that defines one set of predefined values (a waypoint) for motion control.
+   */
+  public class MotionWayPoint {
+	  double m_time;
+	  double m_position;
+	  double m_expectedVelocity;
+	  double m_expectedAcceleration;
+  }
   
   /**
    * Tolerance is the type of tolerance used to specify if the PID controller is
@@ -132,7 +153,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       return isAvgErrorValid() && Math.abs(getAvgError()) < value;
     }
   }
-
+  
   private class PIDTask extends TimerTask {
 
     private ATM2016PIDController m_controller;
@@ -256,21 +277,23 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     if (this.table != null)
       table.removeTableListener(listener);
   }
+  
+  //QUICKCLICK safeArm
   private double safeArm(double output){
 	  if(robot.upperLimitSwitch.get() && robot.armControl.getSetpoint() < 200) {
 			return 0.0;
 		}
 		
-		if(robot.armEncoder.get() < 1800 && output > 0.06) {
-			return 0.06;
+		if(robot.armEncoder.get() < Robot.MIDSETPOINT && output > OUTPUT_CLAMP_DOWN) {
+			return OUTPUT_CLAMP_DOWN;
 			
-		} else if(robot.armEncoder.get() > 1800 && output > 0.2){
-			return 0.2;
-		}else if(output < -0.4) {
-			return -0.4;
+		} else if(robot.armEncoder.get() > Robot.MIDSETPOINT && output > OUTPUT_CLAMP_DOWN){
+			return OUTPUT_CLAMP_DOWN;
+		}else if(output < OUTPUT_CLAMP_UP) {
+			return OUTPUT_CLAMP_UP;
 			
-		} else if(output > 0.4) {
-			return 0.4;
+		} else if(output > OUTPUT_CLAMP_DOWN) {
+			return OUTPUT_CLAMP_DOWN;
 			
 		}
 	
@@ -280,6 +303,26 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   public void setRobot (Robot myRobot){
 	  robot = myRobot;
 	  m_safeArm = true;
+  }
+  
+  public void setMotionPlan(MotionWayPoint[] waypoints, double kA, double kV) {
+	  m_waypoints = waypoints;
+	  m_prevWaypoint = 0;
+	  m_kA = kA;
+	  m_kV = kV;
+	  m_motionPlanEnabled = true;
+  }
+  
+  public MotionWayPoint getCurrentWaypoint(double time) {
+	  for(int i = m_prevWaypoint; i < m_waypoints.length - 1; i++) {
+		  if(time >= m_waypoints[i].m_time && time < m_waypoints[i+1].m_time) {
+			  m_prevWaypoint = i;
+			  
+			  return m_waypoints[i];
+		  }
+	  }
+	  
+	  return null;
   }
 
   /**
@@ -292,7 +335,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 	
     boolean enabled;
     PIDSource pidInput;
-
+    
     synchronized (this) {
       if (m_pidInput == null) {
         return;
@@ -310,6 +353,20 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       PIDOutput pidOutput = null;
       synchronized (this) {
         input = pidInput.pidGet();
+      }
+      
+      if(m_motionPlanEnabled) {
+    	  m_currentWaypoint = getCurrentWaypoint(Timer.getFPGATimestamp() - m_initTime);
+    	  
+    	  if(m_currentWaypoint == null) {
+    		  synchronized(this) {
+        		  m_pidOutput.pidWrite(0.0);
+        	  }
+        	  return;
+    	  }
+    	  
+    	  m_setpoint = m_currentWaypoint.m_position;
+    			  
       }
       
       if((Timer.getFPGATimestamp() - m_initTime) < m_initMillis / 1000.0) {
@@ -352,27 +409,28 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     			  m_FOutput = calculateFeedForward();
     		  }
     	  }
+    	  //FIXME dividing m_maximumOutput and m_minimumOutput was good for the arm PID, but may not be good for other position PIDs
     	  else {
     		  if (m_I != 0) {
     			  double potentialIGain = (m_totalError + m_error) * m_I;
-    			  if (potentialIGain < m_maximumOutput) {
-    				  if (potentialIGain > m_minimumOutput) {
+    			  if (potentialIGain < (m_maximumOutput / 5)) {
+    				  if (potentialIGain > (m_minimumOutput / 5)) {
     					  m_totalError += m_error;
     				  } else {
-    					  m_totalError = m_minimumOutput / m_I;
+    					  m_totalError = (m_minimumOutput / 5) / m_I;
     				  }
     			  } else {
-    				  m_totalError = m_maximumOutput / m_I;
+    				  m_totalError = (m_maximumOutput / 5) / m_I;
     			  }
     		  }
-
-    		  m_result = m_P * m_error + m_I * m_totalError +
-    				  m_D * (m_error - m_prevError) + calculateFeedForward();
-
+    		  m_filteredDifference = (m_A * m_filteredDifference) + ((1 - m_A) * (m_error - m_prevError));
+    		  
     		  m_POutput = m_P * m_error;
     		  m_IOutput = m_I * m_totalError;
-    		  m_DOutput = m_D * (m_error - m_prevError);
+    		  m_DOutput = m_D * m_filteredDifference;
     		  m_FOutput = calculateFeedForward();
+    		  
+    		  m_result = m_POutput + m_IOutput + m_DOutput + m_FOutput;
     	  }
     	  m_prevError = m_error;
 
@@ -405,7 +463,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     		  if (m_safeArm)
     			  safevalue = safeArm(result);
     		  m_bw.write(Timer.getFPGATimestamp() + ", " + input + ", " + m_error + ", " + m_totalError + ", " + safevalue + 
-    				  ", " + m_POutput + ", " + m_IOutput + ", " + m_DOutput + ", " + m_FOutput + ", " + result +"\n");
+    				  ", " + m_POutput + ", " + m_IOutput + ", " + m_DOutput + ", " + m_FOutput + ", " + result + ", " + m_setpoint + "\n");
 
     	  } catch(IOException e) {
     		  System.out.println("It catch");
@@ -437,6 +495,10 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       return m_F * getSetpoint();
     }
     else {
+    	
+    	if(m_motionPlanEnabled) {
+    		return (m_currentWaypoint.m_expectedAcceleration * m_kA) + (m_currentWaypoint.m_expectedVelocity * m_kV);
+    	}
     	//disabling feedforward term because of division by 0 errors (Timer may be too slow for our purposes)
       /*double temp = m_F * getDeltaSetpoint();
       m_prevSetpoint = m_setpoint;
@@ -880,7 +942,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   	m_bw = new BufferedWriter(m_fw);
   	
   	try {
-  		m_bw.write("Timestamp, Input, Error, Accumulated Error, Calculated Output, P: " + m_P + ", I: " + m_I +  ", D: " + m_D + ", F: " + m_F + "Safe Value\n" );
+  		m_bw.write("Timestamp, Input, Error, Accumulated Error, Calculated Output, P: " + m_P + ", I: " + m_I +  ", D: " + m_D + ", F: " + m_F + ", Safe Value, Setpoint\n" );
   		
   		m_logEnabled = true;
   		
