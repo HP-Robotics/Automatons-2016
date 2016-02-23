@@ -182,6 +182,9 @@ public class Robot extends IterativeRobot {
     	createAutoModes();
     	createTriggerObjects();
     	
+    	//create test mode
+    	testMode = new TestMode(this);
+    	
     	//create USB camera
     	//CameraServer camera;
     	//camera = CameraServer.getInstance();
@@ -415,12 +418,10 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK testMode
     public void testPeriodic() {
     	LiveWindow.run();
-    	System.out.println("testPeriodic works");
     	testMode.testPeriodic();
     }
     
     public void testInit() {
-    	System.out.println("testInit works");
     	testMode.testInit();
     }
     
@@ -822,7 +823,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("k_sensitivity", 0.5);
     	SmartDashboard.putNumber("arm", 0);
     	SmartDashboard.putNumber("Arm Speed", 0.0);
-    	SmartDashboard.putNumber("Gyro Drive Target", 0);
+    	SmartDashboard.putNumber("TestGyro Target (Inches)", 0);
     	SmartDashboard.putNumber("GyroDrive Initial Power", 0.0);
     	SmartDashboard.putNumber("GyroDrive Initial Time (ms)", 0.0);
     	SmartDashboard.putNumber("Arm Target", 0);

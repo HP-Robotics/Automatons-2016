@@ -455,10 +455,10 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     		  m_IOutput = m_I * m_totalError;
 
 		  if (m_safeArm) {
-    		      m_filteredDifference = (m_A * m_filteredDifference) + ((1 - m_A) * (m_error - m_prevError));
-                      m_DOutput = m_D * m_filteredDifference;
+			  m_filteredDifference = (m_A * m_filteredDifference) + ((1 - m_A) * (m_error - m_prevError));
+			  m_DOutput = m_D * m_filteredDifference;
 		  } else {
-    		      m_DOutput = m_D * (m_error - m_prevError);
+    		  m_DOutput = m_D * (m_error - m_prevError);
 		  }
 
     		  m_FOutput = calculateFeedForward();
