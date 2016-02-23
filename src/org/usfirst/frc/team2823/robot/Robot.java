@@ -223,15 +223,12 @@ public class Robot extends IterativeRobot {
     	rDriveEncoder.reset();
     	
     	//set arm PID to hold
-    	armControl.enable();
+    	// TODO JUST EXPERIMENTING
+    	//armControl.enable();
     	
     	//disable arm braking
     	arm.enableBrakeMode(false);
     	arm.enable();
-    	
-    	//reset motionplanning PID
-    	motionDriveControl.disable();
-    	motionDriveControl.setSetpoint(0);
     	
     	//reset gyro
     	gyroReset();
@@ -297,19 +294,22 @@ public class Robot extends IterativeRobot {
     		}
     	}*/
     	
-    	if(stick.getRawButton(ABUTTON) && !motionDriveEnabled) {
-    		motionDriveEnabled = true;
-    		tankDriveEnabled = false;
-    		slowDriveEnabled = false;
-    		
-    		motionDriveControl.enableLog("motionControlPID.csv");
-    		motionDriveControl.setSetpoint(driveInchesToEncoder(20));
-    		motionDriveControl.enable();
-    		
+    	if(stick.getRawButton(ABUTTON)) {
+    		if (!motionDriveEnabled) {
+    			motionDriveEnabled = true;
+    			tankDriveEnabled = false;
+    			slowDriveEnabled = false;
+
+    			motionDriveControl.enableLog("motionControlPID.csv");
+    			motionDriveControl.setSetpoint(1000);
+    			//motionDriveControl.hackTest(1.0, 1.0);
+    			motionDriveControl.enable();
+    		}
+
     	} else if(motionDriveEnabled) {
     		motionDriveEnabled = false;
     		tankDriveEnabled = true;
-    		slowDriveEnabled = true;
+    		slowDriveEnabled = false;
     		
     		motionDriveControl.disable();
     		motionDriveControl.closeLog();
@@ -381,7 +381,7 @@ public class Robot extends IterativeRobot {
     	if(tankDriveEnabled) {
     		driveRobot(stick.getRawAxis(XBUTTON) * -0.75, stick.getRawAxis(BBUTTON) * -0.75);
     	} else if(slowDriveEnabled) {
-    		driveRobot(stick.getRawAxis(XBUTTON) * -0.1, stick.getRawAxis(BBUTTON) * -0.1);
+    		driveRobot(stick.getRawAxis(XBUTTON) * -0.15, stick.getRawAxis(BBUTTON) * -0.15);
     	}
     	
     	//send data to Smart Dashboard
@@ -405,7 +405,7 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//update PID constants to Smart Dashboard values
-    	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I")/1000, SmartDashboard.getNumber("D"));
+    	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	//armControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	//gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
     	motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
@@ -601,11 +601,11 @@ public class Robot extends IterativeRobot {
 		//armControl.closeLog();
     }
     
-	public double driveInchesToEncoder(double i) {
+	public static double driveInchesToEncoder(double i) {
 		return i * ENCODER_RESOLUTION / (2 * Math.PI * R * DRIVE_RATIO);
 	}
 
-	public double driveEncoderToInches(double e) {
+	public static double driveEncoderToInches(double e) {
 		return e * 2 * Math.PI * R * DRIVE_RATIO / (ENCODER_RESOLUTION);
 	}
     
@@ -651,11 +651,12 @@ public class Robot extends IterativeRobot {
     }
     public void goGyro (){
     	if(armEncoder.get() < (MIDSETPOINT-OFFSET)){
+    		if (gyroDrive) {
+    			turnControl.disable();
+    			//turnControl.closeLog();
+    			turnControl.reset();
+    		}
     		gyroDrive = false;
-    		
-    		turnControl.disable();
-    		//turnControl.closeLog();
-    		turnControl.reset();
     		return;
     	}
     	if((stick.getPOV() >= 0 && stick.getPOV() <= 45) || (stick.getPOV()>=315)) {
@@ -751,7 +752,7 @@ public class Robot extends IterativeRobot {
     	rDrive2 = new VictorSP(1);
     	
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
-    	motionDriveControl = new ATM2016PIDController(0.0, 0.0, 0.0, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput());
+    	motionDriveControl = new ATM2016PIDController(0.0, 0.0, 0.0, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.05);
     	
     	//good PID values for 50 inches are P: 0.02, I: 0.00001, D:0.05
     	gyroDriveControl = new ATM2016PIDController(0.0, 0.0, 0.0, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput());

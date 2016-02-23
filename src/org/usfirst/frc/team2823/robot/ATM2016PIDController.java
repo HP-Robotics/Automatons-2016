@@ -313,6 +313,31 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 	  m_motionPlanEnabled = true;
   }
   
+  public void hackTest(double kA, double kV) {
+      MotionWayPoint[] m = new MotionWayPoint[3];
+      
+      m[0] = new MotionWayPoint();
+      m[1] = new MotionWayPoint();
+      m[2] = new MotionWayPoint();
+      
+      m[0].m_position = 10;
+      m[0].m_time = 0;
+      m[0].m_expectedAcceleration = 0;
+      m[0].m_expectedVelocity = 0;
+      
+      m[1].m_position = 20;
+      m[1].m_time = 1;
+      m[1].m_expectedAcceleration = 0;
+      m[1].m_expectedVelocity = 0;
+ 
+      m[2].m_position = 20;
+      m[2].m_time = 2;
+      m[2].m_expectedAcceleration = 0;
+      m[2].m_expectedVelocity = 0;
+ 
+      setMotionPlan(m, kA, kV);
+}
+  
   public MotionWayPoint getCurrentWaypoint(double time) {
 	  for(int i = m_prevWaypoint; i < m_waypoints.length - 1; i++) {
 		  if(time >= m_waypoints[i].m_time && time < m_waypoints[i+1].m_time) {
@@ -423,8 +448,19 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     				  m_totalError = (m_maximumOutput / 5) / m_I;
     			  }
     		  }
-    		  m_filteredDifference = (m_A * m_filteredDifference) + ((1 - m_A) * (m_error - m_prevError));
-    		  
+
+		  if (m_safeArm) {
+    		      m_filteredDifference = (m_A * m_filteredDifference) + ((1 - m_A) * (m_error - m_prevError));
+    		      m_DOutput = m_D * (m_error - m_prevError);
+    		      m_result = m_POutput + m_IOutput + m_DOutput + m_FOutput;
+		  } else {
+
+    		      m_result = m_P * m_error + m_I * m_totalError +
+    				  m_D * (m_error - m_prevError) + calculateFeedForward();
+    		      m_DOutput = m_D * (m_error - m_prevError);
+
+		  }
+
     		  m_POutput = m_P * m_error;
     		  m_IOutput = m_I * m_totalError;
     		  m_DOutput = m_D * m_filteredDifference;
@@ -460,13 +496,15 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       if(m_logEnabled) {
     	  try{
     		  double safevalue = result;
-    		  if (m_safeArm)
+    		  if (m_safeArm) {
     			  safevalue = safeArm(result);
-    		  m_bw.write(Timer.getFPGATimestamp() + ", " + input + ", " + m_error + ", " + m_totalError + ", " + safevalue + 
+    		  }
+    		  
+   		  m_bw.write(Timer.getFPGATimestamp() + ", " + input + ", " + m_error + ", " + m_totalError + ", " + safevalue + 
     				  ", " + m_POutput + ", " + m_IOutput + ", " + m_DOutput + ", " + m_FOutput + ", " + result + ", " + m_setpoint + "\n");
 
     	  } catch(IOException e) {
-    		  System.out.println("It catch");
+    		  System.out.println("PID logging died on us");
     		  m_logEnabled = false;
     	  }
       }
