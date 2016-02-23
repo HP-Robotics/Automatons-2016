@@ -434,36 +434,33 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     			  m_FOutput = calculateFeedForward();
     		  }
     	  }
-    	  //FIXME dividing m_maximumOutput and m_minimumOutput was good for the arm PID, but may not be good for other position PIDs
     	  else {
     		  if (m_I != 0) {
+                          double divisor = 1.0;
+                          if (m_safeArm)
+                              divisor = 5.0;
     			  double potentialIGain = (m_totalError + m_error) * m_I;
-    			  if (potentialIGain < (m_maximumOutput / 5)) {
-    				  if (potentialIGain > (m_minimumOutput / 5)) {
+    			  if (potentialIGain < (m_maximumOutput / divisor)) {
+    				  if (potentialIGain > (m_minimumOutput / divisor)) {
     					  m_totalError += m_error;
     				  } else {
-    					  m_totalError = (m_minimumOutput / 5) / m_I;
+    					  m_totalError = (m_minimumOutput / divisor) / m_I;
     				  }
     			  } else {
-    				  m_totalError = (m_maximumOutput / 5) / m_I;
+    				  m_totalError = (m_maximumOutput / divisor) / m_I;
     			  }
     		  }
 
-		  if (m_safeArm) {
-    		      m_filteredDifference = (m_A * m_filteredDifference) + ((1 - m_A) * (m_error - m_prevError));
-    		      m_DOutput = m_D * (m_error - m_prevError);
-    		      m_result = m_POutput + m_IOutput + m_DOutput + m_FOutput;
-		  } else {
-
-    		      m_result = m_P * m_error + m_I * m_totalError +
-    				  m_D * (m_error - m_prevError) + calculateFeedForward();
-    		      m_DOutput = m_D * (m_error - m_prevError);
-
-		  }
-
     		  m_POutput = m_P * m_error;
     		  m_IOutput = m_I * m_totalError;
-    		  m_DOutput = m_D * m_filteredDifference;
+
+		  if (m_safeArm) {
+    		      m_filteredDifference = (m_A * m_filteredDifference) + ((1 - m_A) * (m_error - m_prevError));
+                      m_DOutput = m_D * m_filteredDifference;
+		  } else {
+    		      m_DOutput = m_D * (m_error - m_prevError);
+		  }
+
     		  m_FOutput = calculateFeedForward();
     		  
     		  m_result = m_POutput + m_IOutput + m_DOutput + m_FOutput;
