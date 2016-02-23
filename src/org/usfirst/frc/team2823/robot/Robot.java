@@ -521,6 +521,8 @@ public class Robot extends IterativeRobot {
 			lDrive2.set(output);
 			rDrive1.set(-output);
 			rDrive2.set(-output);
+			
+			//goNoDrifting(output, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.1, 0.5);
 		}
 
 	}
