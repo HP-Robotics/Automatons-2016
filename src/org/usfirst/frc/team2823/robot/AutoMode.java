@@ -8,7 +8,12 @@ public class AutoMode {
 	Robot robot;
 	Timer tick;
 	int stage = 0;
-	double[] stageTimeouts;
+	StageDataElement[] stageData;
+	
+	public class StageDataElement {
+		double timeout;
+		boolean entered;
+	}
 	
 	
 	public AutoMode(Robot myBot) {
@@ -16,8 +21,12 @@ public class AutoMode {
 	}
 	
 	public void setStageTimeouts(double[] t) {
-		stageTimeouts = t;
-
+		for(int i = 0; i < t.length; i++) {
+			stageData[i] = new StageDataElement();
+			
+			stageData[i].timeout = t[i];
+			stageData[i].entered = false;
+		}
 	}
 	
 	public void startAuto() {
@@ -38,10 +47,10 @@ public class AutoMode {
 	}
 
 	public boolean checkStageTimeout() {
-		if (stage < 0 || stage >= stageTimeouts.length)
+		if (stage < 0 || stage >= stageData.length)
 			return true;
 	
-		if (tick.get() > stageTimeouts[stage]) {
+		if (tick.get() > stageData[stage].timeout) {
 
 			System.out.printf("stage %d timed out\n", stage);
 			nextStage();
@@ -55,7 +64,7 @@ public class AutoMode {
 		tick.reset();
 		stage++;
 		
-		if(stage >= stageTimeouts.length) {
+		if(stage >= stageData.length) {
 			endAuto();
 		}
 	}
