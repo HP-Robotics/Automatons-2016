@@ -610,7 +610,7 @@ public class Robot extends IterativeRobot {
 		return e * 2 * Math.PI * R * DRIVE_RATIO / (ENCODER_RESOLUTION);
 	}
     
-    public void goNow(double outputMagnitude, double curve, double minimum, double sensitivity) {
+    public void goNoDrifting(double outputMagnitude, double curve, double minimum, double sensitivity) {
         double leftOutput, rightOutput;
         
         if (curve < 0) {
@@ -661,7 +661,7 @@ public class Robot extends IterativeRobot {
     		return;
     	}
     	if((stick.getPOV() >= 0 && stick.getPOV() <= 45) || (stick.getPOV()>=315)) {
-    		goNow(0.7, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.5, 0.5);
+    		goNoDrifting(0.7, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.5, 0.5);
     		if(!gyroDrive){
     			gyroReset();
     			gyroDrive = true;
@@ -670,7 +670,7 @@ public class Robot extends IterativeRobot {
     		}
     		
     	} else if(stick.getPOV() >= 135 && stick.getPOV()<= 225) {
-    		goNow(-0.7, gyro.getAngle() * SmartDashboard.getNumber("k_angle"), -0.5, 0.5);
+    		goNoDrifting(-0.7, gyro.getAngle() * SmartDashboard.getNumber("k_angle"), -0.5, 0.5);
     		if(!gyroDrive){
     			gyroReset();
     			gyroDrive = true;

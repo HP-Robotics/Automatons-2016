@@ -33,12 +33,12 @@ public class MoveBackAuto extends AutoMode {
 	}
 	
 	public void driveForward() {
-		 robot.goNow(0.2, -robot.gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.5, 0.5);
+		 robot.goNoDrifting(0.2, -robot.gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.5, 0.5);
 	     //robot.driveRobot(0.2, 0.2);
 	}
 	
 	public void driveBack() {
-		robot.goNow(-0.2, -robot.gyro.getAngle() * SmartDashboard.getNumber("k_angle"), -0.5, 0.5);
+		robot.goNoDrifting(-0.2, -robot.gyro.getAngle() * SmartDashboard.getNumber("k_angle"), -0.5, 0.5);
 		//robot.driveRobot(-0.2, -0.2);
 	}
 }
