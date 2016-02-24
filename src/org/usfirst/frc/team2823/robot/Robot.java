@@ -409,9 +409,9 @@ public class Robot extends IterativeRobot {
     	
     	//update PID constants to Smart Dashboard values
     	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
-    	//armControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
+    	armControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	//gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
-    	motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
+    	//motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	
     }
     
@@ -817,9 +817,9 @@ public class Robot extends IterativeRobot {
     	 * TgtShtrSpeed: 3300 far away (3 robot widths)
     	 */
     	SmartDashboard.putNumber("TargetShooterSpeed", 3300);
-    	SmartDashboard.putNumber("P", 0.0);
-    	SmartDashboard.putNumber("I", 0.0);
-    	SmartDashboard.putNumber("D", 0.0);
+    	SmartDashboard.putNumber("P", 0.004);
+    	SmartDashboard.putNumber("I", 0.000075);
+    	SmartDashboard.putNumber("D", 0.075);
     	SmartDashboard.putNumber("F", 0.0);
     	SmartDashboard.putNumber("k_angle", 0.1);
     	SmartDashboard.putNumber("k_sensitivity", 0.5);
