@@ -14,17 +14,18 @@ public class TestMode {
 		robot.lDriveEncoder.reset();
 		robot.rDriveEncoder.reset();
 		
-		robot.gyroDriveControl.enableLog("TestGyroPID.csv");
-		robot.gyroDriveControl.enable();
+		//robot.gyroDriveControl.enableLog("TestGyroPID.csv");
+		//robot.gyroDriveControl.enable();
 		
-		robot.gyroDriveControl.setSetpoint(SmartDashboard.getNumber("TestGyro Target (Inches)"));
+		//robot.gyroDriveControl.setSetpoint(SmartDashboard.getNumber("TestGyro Target (Inches)"));
 
 	}
 	
 	public void testPeriodic() {
-		robot.gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
+		//robot.gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
 		
 		SmartDashboard.putNumber("Left Encoder (Inches)", Robot.driveEncoderToInches(robot.lDriveEncoder.get()));
 		SmartDashboard.putNumber("Right Encoder (Inches)", Robot.driveEncoderToInches(robot.rDriveEncoder.get()));
+		SmartDashboard.putNumber("Arm Encoder", robot.armEncoder.get());
 	}
 }

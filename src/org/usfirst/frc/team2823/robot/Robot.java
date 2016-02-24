@@ -105,8 +105,9 @@ public class Robot extends IterativeRobot {
 	
 	/*declare ~magic~ numbers*/
 	static final int SHOOTSETPOINT = 0;
+	static final int HIGHTRAVELSETPOINT = 600;
 	static final int MIDSETPOINT = 1800;
-	static final int INTAKESETPOINT = 2325;
+	static final int INTAKESETPOINT = 2315;
 	static final int OFFSET = 100;
 	
 	static final int TRIGGEROFFPOSITION = 110;
@@ -319,22 +320,31 @@ public class Robot extends IterativeRobot {
     	}
     	
     	if(armUpState.updateState(stick.getRawButton(RBUMPER))) {
-    		if(armEncoder.get() < (MIDSETPOINT + OFFSET)) {
+    		if(armEncoder.get() < (HIGHTRAVELSETPOINT + OFFSET)) {
     			disableArmPid();
     			turnIntakeOff();
     			armControl.setSetpoint(SHOOTSETPOINT);
     			enableArmPid();
     			
+    		} else if(armEncoder.get() < (MIDSETPOINT + OFFSET)) {
+    			disableArmPid();
+    			armControl.setSetpoint(HIGHTRAVELSETPOINT);
+    			enableArmPid();
+    			
     		} else {
     			disableArmPid();
-    			turnIntakeOff();
     			armControl.setSetpoint(MIDSETPOINT);
     			enableArmPid();
     		}
     	}
     	
     	if(armDownState.updateState(stick.getRawButton(RTRIGGER))) {
-    		if(armEncoder.get() < (MIDSETPOINT-OFFSET)) {
+    		if(armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)) {
+    			disableArmPid();
+    			armControl.setSetpoint(HIGHTRAVELSETPOINT);
+    			enableArmPid();
+    			
+    		} else if(armEncoder.get() < (MIDSETPOINT - OFFSET)) {
     			disableArmPid();
     			armControl.setSetpoint(MIDSETPOINT);
     			enableArmPid();
