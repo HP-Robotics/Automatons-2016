@@ -517,12 +517,8 @@ public class Robot extends IterativeRobot {
 		@Override
 		public void pidWrite(double output) {
 			SmartDashboard.putNumber("Gyro Drive PIDOutput", output);
-			lDrive1.set(output);
-			lDrive2.set(output);
-			rDrive1.set(-output);
-			rDrive2.set(-output);
 			
-			//goNoDrifting(output, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.1, 0.5);
+			goNoDrifting(output, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.1, 0.5);
 		}
 
 	}
