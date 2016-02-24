@@ -392,7 +392,7 @@ public class Robot extends IterativeRobot {
     	if(tankDriveEnabled) {
     		driveRobot(stick.getRawAxis(XBUTTON) * -0.75, stick.getRawAxis(BBUTTON) * -0.75);
     	} else if(slowDriveEnabled) {
-    		driveRobot(stick.getRawAxis(XBUTTON) * -0.15, stick.getRawAxis(BBUTTON) * -0.15);
+    		driveRobot(stick.getRawAxis(XBUTTON) * -0.2, stick.getRawAxis(BBUTTON) * -0.2);
     	}
     	
     	//send data to Smart Dashboard
@@ -417,7 +417,7 @@ public class Robot extends IterativeRobot {
     	
     	//update PID constants to Smart Dashboard values
     	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
-    	armControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
+    	//armControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	//gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
     	//motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	
@@ -762,7 +762,7 @@ public class Robot extends IterativeRobot {
     	motionDriveControl = new ATM2016PIDController(0.0, 0.0, 0.0, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.05);
     	
     	//good PID values for 50 inches are P: 0.02, I: 0.00001, D:0.05
-    	gyroDriveControl = new ATM2016PIDController(0.0, 0.0, 0.0, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput());
+    	gyroDriveControl = new ATM2016PIDController(0.02, 0.00001, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput());
     	
     }
     
@@ -834,6 +834,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("GyroDrive Initial Time (ms)", 0.0);
     	SmartDashboard.putNumber("Arm Target", 0);
     	SmartDashboard.putNumber("TestDrive Power", 0.0);
+    	SmartDashboard.putBoolean("Lowbar?", true);
     	
     	
     }
@@ -849,6 +850,8 @@ public class Robot extends IterativeRobot {
     	
 		autoChooser.addObject("Empty: Do Nothing", new EmptyAuto(this));
 		autoChooser.addObject("Drive Back", new MoveBackAuto(this));
+		autoChooser.addObject("Cross Defense", new CrossDefenseAuto(this));
+		autoChooser.addObject("Cross Low Bar and Shoot", new CrossAndShootAuto(this));
 		autoChooser.addDefault("Calibrate", new CalibrateAuto(this));
 		
     	SmartDashboard.putData("Autonomous Mode", autoChooser);

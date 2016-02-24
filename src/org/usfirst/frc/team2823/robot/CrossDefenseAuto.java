@@ -3,7 +3,6 @@ package org.usfirst.frc.team2823.robot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class CrossDefenseAuto extends AutoMode {
-	Robot robot;
 	
 	public CrossDefenseAuto(Robot myBot) {
 		super(myBot);
@@ -11,6 +10,7 @@ public class CrossDefenseAuto extends AutoMode {
 
 	@Override
 	public void autoInit() {
+		//FIXME disable PID controllers at startup!!!
 		double[] timeouts = {1.0, 15.0, 4.0};
 		setStageTimeouts(timeouts);
 		robot.gyroReset();
@@ -40,7 +40,7 @@ public class CrossDefenseAuto extends AutoMode {
 		if(!stageData[stage].entered) {
 			
 			//spin shooter up to speed
-			robot.shooterSpeedControl.setSetpoint(SmartDashboard.getNumber("TargetShooterSpeed"));
+			robot.shooterSpeedControl.setSetpointInRPMs(SmartDashboard.getNumber("TargetShooterSpeed"));
 			robot.shooterSpeedControl.enable();
 			
 			stageData[stage].entered = true;

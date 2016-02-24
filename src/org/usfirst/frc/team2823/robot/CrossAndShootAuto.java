@@ -3,7 +3,6 @@ package org.usfirst.frc.team2823.robot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class CrossAndShootAuto extends AutoMode {
-	Robot robot;
 	
 	public CrossAndShootAuto(Robot myBot) {
 		super(myBot);
@@ -11,6 +10,7 @@ public class CrossAndShootAuto extends AutoMode {
 
 	@Override
 	public void autoInit() {
+		//FIXME disable PID controllers!!!
 		double[] timeouts = {1.0, 15.0, 4.0, 3.0, 2.0, 2.0, 1.0, 1.0};
 		setStageTimeouts(timeouts);
 		robot.gyroReset();
@@ -55,7 +55,7 @@ public class CrossAndShootAuto extends AutoMode {
 		if(!stageData[stage].entered) {
 			
 			//spin shooter up to speed
-			robot.shooterSpeedControl.setSetpoint(SmartDashboard.getNumber("TargetShooterSpeed"));
+			robot.shooterSpeedControl.setSetpointInRPMs(SmartDashboard.getNumber("TargetShooterSpeed"));
 			robot.shooterSpeedControl.enable();
 			
 			stageData[stage].entered = true;
@@ -109,6 +109,10 @@ public class CrossAndShootAuto extends AutoMode {
 		if(!stageData[stage].entered) {
 			
 			//FIXME Remember to restore gyro values in teleop!!!
+			//reset drive encoders
+			robot.lDriveEncoder.reset();
+			robot.rDriveEncoder.reset();
+			
 			//drive with gyro PID to 50 inches
 			robot.gyroDriveControl.enableLog("autoGyroDrivePID.csv");
 			robot.gyroDriveControl.setOutputRange(-0.2, 0.2);

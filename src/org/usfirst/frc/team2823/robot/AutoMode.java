@@ -21,6 +21,8 @@ public class AutoMode {
 	}
 	
 	public void setStageTimeouts(double[] t) {
+		stageData = new StageDataElement[t.length];
+		
 		for(int i = 0; i < t.length; i++) {
 			stageData[i] = new StageDataElement();
 			

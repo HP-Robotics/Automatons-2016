@@ -16,7 +16,7 @@ public class TestMode {
 		robot.lDriveEncoder.reset();
 		robot.rDriveEncoder.reset();
 		
-		robot.armControl.setSetpoint(Robot.SHOOTSETPOINT);
+		robot.armControl.setSetpoint(Robot.HIGHTRAVELSETPOINT);
 		robot.armControl.enable();
 		
 		//robot.gyroDriveControl.enableLog("TestGyroPID.csv");
@@ -32,7 +32,7 @@ public class TestMode {
 	public void testPeriodic() {
 		//robot.gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
 		
-		if((Timer.getFPGATimestamp() - initTime) > 0.5) {
+		if((Timer.getFPGATimestamp() - initTime) > 2) {
 			robot.driveRobot(0.0, 0.0);
 		}
 		
