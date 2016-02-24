@@ -11,7 +11,7 @@ public class CrossDefenseAuto extends AutoMode {
 
 	@Override
 	public void autoInit() {
-		double[] timeouts = {15.0, 1.0};
+		double[] timeouts = {1.0, 15.0, 4.0};
 		setStageTimeouts(timeouts);
 		robot.gyroReset();
 		startAuto();
@@ -24,9 +24,12 @@ public class CrossDefenseAuto extends AutoMode {
 		
 		switch (stage) {
 		case 0:
-			lowerArmBasedOnDefense();
+			spinUpShooter();
 			break;
 		case 1:
+			lowerArmBasedOnDefense();
+			break;
+		case 2:
 			driveOverDefense();
 			break;
 		}
@@ -52,10 +55,10 @@ public class CrossDefenseAuto extends AutoMode {
 			robot.armControl.enable();
 			
 			//determine setpoint based on SmartDashboard input
-			if(SmartDashboard.getString("Auto Defense").equals("LOWBAR")) {
-				robot.armControl.setSetpoint(Robot.INTAKESETPOINT);
-			} else {
+			if(!SmartDashboard.getBoolean("Lowbar?")) {
 				robot.armControl.setSetpoint(Robot.MIDSETPOINT);
+			} else {
+				robot.armControl.setSetpoint(Robot.INTAKESETPOINT);
 			}
 			
 			stageData[stage].entered = true;
@@ -72,9 +75,17 @@ public class CrossDefenseAuto extends AutoMode {
 		//run entry code
 		if(!stageData[stage].entered) {
 			
-			
+			//drive with gyro PID to 50 inches
+			robot.gyroDriveControl.enableLog("autoGyroDrivePID.csv");
+			robot.gyroDriveControl.enable();
+			robot.gyroDriveControl.setSetpoint(50);
 			
 			stageData[stage].entered = true;
+		}
+		
+		//move on to the next stage when the average of the drive encoders (in inches) is within 1 inch of the setpoint
+		if(Math.abs((Robot.driveEncoderToInches(robot.lDriveEncoder.get() + robot.rDriveEncoder.get()) / 2) - robot.gyroDriveControl.getSetpoint()) < 1) {
+			nextStage();
 		}
 	}
 }
