@@ -10,7 +10,6 @@ import edu.wpi.first.wpilibj.PIDSourceType;
 import edu.wpi.first.wpilibj.SPI.Port;
 import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.Talon;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.CANTalon;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
@@ -19,7 +18,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.command.Command;
 
 import java.io.*;
 import java.net.*;
@@ -107,7 +105,7 @@ public class Robot extends IterativeRobot {
 	static final int SHOOTSETPOINT = 0;
 	static final int HIGHTRAVELSETPOINT = 600;
 	static final int MIDSETPOINT = 1800;
-	static final int INTAKESETPOINT = 2315;
+	static final int INTAKESETPOINT = 2320;
 	static final int OFFSET = 100;
 	
 	static final int TRIGGEROFFPOSITION = 110;
@@ -835,6 +833,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("GyroDrive Initial Power", 0.0);
     	SmartDashboard.putNumber("GyroDrive Initial Time (ms)", 0.0);
     	SmartDashboard.putNumber("Arm Target", 0);
+    	SmartDashboard.putNumber("TestDrive Power", 0.0);
     	
     	
     }
