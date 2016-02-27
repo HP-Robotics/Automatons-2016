@@ -310,6 +310,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 	  m_safeArm = true;
   }
   
+  //QUICKCLICK motion planning methods
   public void configureGoal(double goal, double max_v, double max_a) {
 	  m_motionPlanEnabled = true;
 	  
@@ -412,6 +413,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   //QUICKCLICK calculate 
   protected void calculate() {
 	
+	  double currentTime;
     boolean enabled;
     PIDSource pidInput;
     
@@ -432,10 +434,13 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       PIDOutput pidOutput = null;
       synchronized (this) {
         input = pidInput.pidGet();
+        
+        //set current time exactly when the input is obtained (higher accuracy)
+        currentTime = Timer.getFPGATimestamp();
       }
       
       if(m_motionPlanEnabled) {
-    	  m_currentWaypoint = getCurrentWaypoint(Timer.getFPGATimestamp() - m_initTime);
+    	  m_currentWaypoint = getCurrentWaypoint(currentTime - m_initTime);
     	  
     	  if(m_currentWaypoint == null) {
     		  synchronized(this) {
@@ -448,7 +453,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     			  
       }
       
-      if((Timer.getFPGATimestamp() - m_initTime) < m_initMillis / 1000.0) {
+      if((currentTime - m_initTime) < m_initMillis / 1000.0) {
     	  synchronized(this) {
     		  m_pidOutput.pidWrite(m_initPower);
     	  }
@@ -551,7 +556,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     			  safevalue = safeArm(result);
     		  }
     		  
-   		  m_bw.write(Timer.getFPGATimestamp() + ", " + input + ", " + m_error + ", " + m_totalError + ", " + safevalue + 
+   		  m_bw.write(currentTime + ", " + input + ", " + m_error + ", " + m_totalError + ", " + safevalue + 
     				  ", " + m_POutput + ", " + m_IOutput + ", " + m_DOutput + ", " + m_FOutput + ", " + result + ", " + m_setpoint + "\n");
 
     	  } catch(IOException e) {
