@@ -52,6 +52,8 @@ public class Robot extends IterativeRobot {
 	
 	static final double DRIVETHRESHOLD = 0.05;
 	
+	static final double MAXACCELERATION = 275;	//inches / sec^2
+	static final double MAXVELOCITY = 120;		//inches / sec
 
 	final static double[] LEFTVOLTAGES = new double[] { 2.0, 1.79, 1.64, 1.38, 1.24, 1.13, 1.03, 0.93, 0.88, 0.82, 0.78, 0.73, 0.67, 0.61, 0.58,
 														0.56, 0.54, 0.52, 0.50, 0.49, 0.48 };
@@ -331,8 +333,7 @@ public class Robot extends IterativeRobot {
     			slowDriveEnabled = false;
 
     			motionDriveControl.enableLog("motionControlPID.csv");
-    			motionDriveControl.setSetpoint(1000);
-    			//motionDriveControl.hackTest(1.0, 1.0);
+    			motionDriveControl.configureGoal(50, MAXVELOCITY, MAXACCELERATION);
     			motionDriveControl.enable();
     		}
     		
@@ -815,10 +816,10 @@ public class Robot extends IterativeRobot {
     	rDrive2 = new VictorSP(1);
     	
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
+    	gyroDriveControl = new ATM2016PIDController(0.02, 0.00001, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput());
     	motionDriveControl = new ATM2016PIDController(0.0, 0.0, 0.0, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.05);
     	
-    	//good PID values for 50 inches are P: 0.02, I: 0.00001, D:0.05
-    	gyroDriveControl = new ATM2016PIDController(0.02, 0.00001, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput());
+    	motionDriveControl.setKaKv(0.0027, 0.0079);
     	
     }
     

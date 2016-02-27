@@ -386,6 +386,11 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       return p;
   }
   
+  public void setKaKv(double kA, double kV) {
+	  m_kA = kA;
+	  m_kV = kV;
+  }
+  
   public void printGoalDetails() {
       System.out.println("m_maxVelocity:" + m_maxVelocity);
       System.out.println("m_maxAcceleration:" + m_maxAcceleration);

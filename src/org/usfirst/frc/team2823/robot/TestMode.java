@@ -16,8 +16,8 @@ public class TestMode {
 		robot.lDriveEncoder.reset();
 		robot.rDriveEncoder.reset();
 		
-		robot.armControl.setSetpoint(Robot.HIGHTRAVELSETPOINT);
-		robot.armControl.enable();
+		//robot.armControl.setSetpoint(Robot.HIGHTRAVELSETPOINT);
+		//robot.armControl.enable();
 		
 		//robot.gyroDriveControl.enableLog("TestGyroPID.csv");
 		//robot.gyroDriveControl.enable();
