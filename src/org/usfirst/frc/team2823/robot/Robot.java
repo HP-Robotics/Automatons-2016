@@ -408,9 +408,9 @@ public class Robot extends IterativeRobot {
     	
     	goGyro();
     	if(tankDriveEnabled) {
-    		driveRobot(leftSpeed * -0.75, rightSpeed * -0.75);
+    		driveRobot(Math.pow(-leftSpeed, 3.0), Math.pow(-rightSpeed, 3.0));
     	} else if(slowDriveEnabled) {
-    		driveRobot(leftSpeed * -0.2, rightSpeed * -0.2);
+    		driveRobot(Math.pow(leftSpeed * -0.2, 3.0), Math.pow(rightSpeed * -0.2, 3.0));
     	}
     	
     	//send data to Smart Dashboard
