@@ -870,7 +870,7 @@ public class Robot extends IterativeRobot {
     	 */
     	SmartDashboard.putNumber("TargetShooterSpeed", 3300);
     	SmartDashboard.putNumber("P", 0.05);
-    	SmartDashboard.putNumber("I", 0.0001);
+    	SmartDashboard.putNumber("I", 0.00015);
     	SmartDashboard.putNumber("D", 0.05);
     	SmartDashboard.putNumber("F", 0.0);
     	SmartDashboard.putNumber("k_angle", 0.1);
