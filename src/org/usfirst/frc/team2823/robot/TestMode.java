@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 public class TestMode {
 	Robot robot;
 	double initTime;
+	boolean testPIDEnabled = false;
 	
 	public TestMode(Robot newRobot) {
 		robot = newRobot;
@@ -40,25 +41,49 @@ public class TestMode {
 			robot.gyroDriveControl.closeLog();
 		}*/
 		
-    	if(robot.stick.getRawButton(Robot.ABUTTON)) {
-    		if (!robot.motionDriveEnabled) {
-    			robot.motionDriveEnabled = true;
-    			robot.tankDriveEnabled = false;
-    			robot.slowDriveEnabled = false;
+		if(robot.stick.getRawButton(Robot.ABUTTON)) {
+			if (!robot.motionDriveEnabled) {
+				robot.lDriveEncoder.reset();
+				robot.rDriveEncoder.reset();
+				robot.motionDriveEnabled = true;
+				robot.tankDriveEnabled = false;
+				robot.slowDriveEnabled = false;
 
-    			robot.motionDriveControl.enableLog("motionControlPID.csv");
-    			robot.motionDriveControl.configureGoal(50, Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
-    			robot.motionDriveControl.enable();
-    		}
-    		
-    	} else if(robot.motionDriveEnabled) {
-    		robot.motionDriveEnabled = false;
-    		robot.tankDriveEnabled = true;
-    		robot.slowDriveEnabled = false;
-    		
-    		robot.motionDriveControl.disable();
-    		robot.motionDriveControl.closeLog();
-    	}
+				robot.motionDriveControl.enableLog("motionControlPID.csv");
+				robot.motionDriveControl.configureGoal(SmartDashboard.getNumber("Motion Plan Target"), Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
+				robot.motionDriveControl.enable();
+			}
+
+		} else if(robot.motionDriveEnabled) {
+			robot.motionDriveEnabled = false;
+			robot.tankDriveEnabled = true;
+			robot.slowDriveEnabled = false;
+
+			robot.motionDriveControl.disable();
+			robot.motionDriveControl.closeLog();
+		}
+    	
+		if(robot.stick.getRawButton(Robot.BBUTTON)){
+			if(!testPIDEnabled) {
+				robot.motionDriveControl.enableLog("motionControlPID.csv");
+				robot.motionDriveControl.setSetpoint(12);
+				robot.motionDriveControl.enable();
+				System.out.println("Start PID");
+
+				testPIDEnabled = true;
+			}
+		} else if(testPIDEnabled) {
+			robot.motionDriveControl.disable();
+			System.out.println("Stop PID");
+			robot.motionDriveControl.closeLog();
+			System.out.println(robot.motionDriveControl.isEnabled());
+			System.out.println(robot.motionDriveControl.getP());
+			
+			robot.lDriveEncoder.reset();
+			robot.rDriveEncoder.reset();
+
+			testPIDEnabled = false;
+		}
 		
 		SmartDashboard.putNumber("Left Encoder (Inches)", Robot.driveEncoderToInches(robot.lDriveEncoder.get()));
 		SmartDashboard.putNumber("Right Encoder (Inches)", Robot.driveEncoderToInches(robot.rDriveEncoder.get()));

@@ -271,7 +271,11 @@ public class Robot extends IterativeRobot {
     public void teleopPeriodic() {
     	
     	//run the trigger only if the shooter wheel is at speed
-    	if(stick.getRawButton(BBUTTON) && shooterIsAtSpeed() && armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)) {
+    	if(stick.getRawButton(BBUTTON) && (true || (shooterIsAtSpeed() && armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)))) {
+    		//FIXME restore this before competition!
+    		//FIXME
+    		//FIXME !!!!!!!!!!!!!!!!!!
+    		
     		trigger.setAngle(TRIGGERONPOSITION);
     		
     	}
@@ -356,12 +360,13 @@ public class Robot extends IterativeRobot {
     		manualArmEnabled = false;
     	}
     	
+    	//FIXME remove true and false before competition!!!!!!!!
     	if (!gyroDrive && !motionDriveEnabled) {
-    		if(armEncoder.get() < (MIDSETPOINT - OFFSET) && tankDriveEnabled) {
+    		if(false && armEncoder.get() < (MIDSETPOINT - OFFSET) && tankDriveEnabled) {
     			tankDriveEnabled = false;
     			slowDriveEnabled = true;
     			
-    		} else if(armEncoder.get() > (MIDSETPOINT - OFFSET) && !tankDriveEnabled) {
+    		} else if(true || (armEncoder.get() > (MIDSETPOINT - OFFSET) && !tankDriveEnabled)) {
     			tankDriveEnabled = true;
     			slowDriveEnabled = false;
     		}
@@ -533,6 +538,8 @@ public class Robot extends IterativeRobot {
 		public void pidWrite(double output) {
 			SmartDashboard.putNumber("Gyro Drive PIDOutput", output);
 			
+			System.out.println("pidWrite " + output);
+			
 			goNoDrifting(output, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.1, 0.5);
 		}
 		
@@ -694,7 +701,8 @@ public class Robot extends IterativeRobot {
     	
     }
     public void goGyro (){
-    	if(armEncoder.get() < (MIDSETPOINT - OFFSET)){
+    	//FIXME remove false before competition!!!!!!!!!!!!!!!!!!11!11!1!11!!
+    	if(false && armEncoder.get() < (MIDSETPOINT - OFFSET)) {
     		if (gyroDrive) {
     			turnControl.disable();
     			//turnControl.closeLog();
@@ -801,9 +809,10 @@ public class Robot extends IterativeRobot {
     	
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
     	gyroDriveControl = new ATM2016PIDController(0.02, 0.00001, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput());
-    	motionDriveControl = new ATM2016PIDController(0.0, 0.0, 0.0, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.05);
+    	motionDriveControl = new ATM2016PIDController(0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.01);
     	
-    	motionDriveControl.setKaKv(0.0027, 0.0079);
+    	//motionDriveControl.setKaKv(0.0027, 0.0079);
+    	motionDriveControl.setKaKv(0.002, 0.01087);
     	
     }
     
@@ -860,9 +869,9 @@ public class Robot extends IterativeRobot {
     	 * TgtShtrSpeed: 3300 far away (3 robot widths)
     	 */
     	SmartDashboard.putNumber("TargetShooterSpeed", 3300);
-    	SmartDashboard.putNumber("P", 0.004);
-    	SmartDashboard.putNumber("I", 0.000075);
-    	SmartDashboard.putNumber("D", 0.075);
+    	SmartDashboard.putNumber("P", 0.05);
+    	SmartDashboard.putNumber("I", 0.0001);
+    	SmartDashboard.putNumber("D", 0.05);
     	SmartDashboard.putNumber("F", 0.0);
     	SmartDashboard.putNumber("k_angle", 0.1);
     	SmartDashboard.putNumber("k_sensitivity", 0.5);
@@ -871,6 +880,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("GyroDrive Initial Power", 0.0);
     	SmartDashboard.putNumber("GyroDrive Initial Time (ms)", 0.0);
     	SmartDashboard.putNumber("Arm Target", 0);
+    	SmartDashboard.putNumber("Motion Plan Target", 0.0);
     	SmartDashboard.putNumber("TestDrive Power", 0.0);
     	SmartDashboard.putBoolean("Lowbar?", true);
     		
