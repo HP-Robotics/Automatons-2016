@@ -93,9 +93,14 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   private boolean m_safeArm = false;
   
   private MotionWayPoint m_currentWaypoint;
-  private MotionWayPoint[] m_waypoints;
   private boolean m_motionPlanEnabled = false;
-  private int m_prevWaypoint;
+  private double  m_maxVelocity;
+  private double  m_maxAcceleration;
+  private double  m_timeUntilMaxVelocity;
+  private double  m_timeSpentCruising;
+  private double  m_positionAtMaxVelocity;
+  private double  m_positionAtEndOfCruise;
+  private double  m_timeAtEndOfCruise;
   
   /**
    * Subclass that defines one set of predefined values (a waypoint) for motion control.
@@ -305,49 +310,98 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 	  m_safeArm = true;
   }
   
-  public void setMotionPlan(MotionWayPoint[] waypoints, double kA, double kV) {
-	  m_waypoints = waypoints;
-	  m_prevWaypoint = 0;
-	  m_kA = kA;
-	  m_kV = kV;
+  public void configureGoal(double goal, double max_v, double max_a) {
 	  m_motionPlanEnabled = true;
+	  
+      double midpoint = goal / 2;
+      
+      m_maxAcceleration = max_a;
+
+      double t_until_midpoint = Math.sqrt( (midpoint * 2) / max_a);
+
+      /* New formula:  v = at */
+      
+      double v_needed_to_get_to_midpoint = t_until_midpoint * max_a;
+
+      /* Simple case:  we never hit max velocity */
+      if (v_needed_to_get_to_midpoint <= max_v) {
+          m_maxVelocity = v_needed_to_get_to_midpoint;
+          m_timeUntilMaxVelocity = t_until_midpoint;
+          m_timeSpentCruising = 0.0;
+      } else {
+          /* Complex case:  we accelerate up to max v, cruise for a while, and then decelerate */
+          m_maxVelocity = max_v;
+
+          /* v = at , so t = v/a */
+          m_timeUntilMaxVelocity = max_v/max_a;
+
+          /* d = 1/2 at^2 */
+          double distance_while_accelerating = 0.5 * max_a *
+                  (m_timeUntilMaxVelocity * m_timeUntilMaxVelocity);
+
+          double distance_while_cruising = goal - (2 * distance_while_accelerating);
+
+          m_timeSpentCruising = distance_while_cruising / max_v;
+      }
+      m_positionAtMaxVelocity = 0.5 * m_maxAcceleration * (m_timeUntilMaxVelocity * m_timeUntilMaxVelocity);
+      m_positionAtEndOfCruise = m_positionAtMaxVelocity + (m_timeSpentCruising * m_maxVelocity);
+      m_timeAtEndOfCruise = m_timeUntilMaxVelocity + m_timeSpentCruising;
+
   }
   
-  public void hackTest(double kA, double kV) {
-      MotionWayPoint[] m = new MotionWayPoint[3];
-      
-      m[0] = new MotionWayPoint();
-      m[1] = new MotionWayPoint();
-      m[2] = new MotionWayPoint();
-      
-      m[0].m_position = 10;
-      m[0].m_time = 0;
-      m[0].m_expectedAcceleration = 0;
-      m[0].m_expectedVelocity = 0;
-      
-      m[1].m_position = 20;
-      m[1].m_time = 1;
-      m[1].m_expectedAcceleration = 0;
-      m[1].m_expectedVelocity = 0;
- 
-      m[2].m_position = 20;
-      m[2].m_time = 2;
-      m[2].m_expectedAcceleration = 0;
-      m[2].m_expectedVelocity = 0;
- 
-      setMotionPlan(m, kA, kV);
-}
+  public MotionWayPoint getCurrentWaypoint(double t) {
+
+      if (t > (2 * m_timeUntilMaxVelocity) + m_timeSpentCruising) {
+          return null;
+      }
+
+      MotionWayPoint p = new MotionWayPoint();
+      p.m_time = t;
+      if (t < m_timeUntilMaxVelocity) {
+          /* We are still ramping up.  */
+          p.m_expectedVelocity = t * m_maxAcceleration;
+          p.m_expectedAcceleration = m_maxAcceleration;
+          p.m_position = 0.5 * m_maxAcceleration * t * t;
+      } else {
+          /* We are either cruising, or ramping down */
+          if (t < m_timeAtEndOfCruise) {
+              /* We are cruising */
+              p.m_expectedVelocity = m_maxVelocity;
+              p.m_expectedAcceleration = 0;
+              p.m_position = m_positionAtMaxVelocity + (t - m_timeUntilMaxVelocity) * m_maxVelocity;
+          } else {
+              /* We are ramping down */
+              double t_decel = (t - m_timeAtEndOfCruise);
+              p.m_expectedAcceleration = -1.0 * m_maxAcceleration;
+              p.m_expectedVelocity = m_maxVelocity - (t_decel * m_maxAcceleration);
+
+              /* d = d0 + v0*t + 1/2 a t^2   */
+              p.m_position = m_positionAtEndOfCruise + 
+                                  (m_maxVelocity * t_decel) +
+                                  (0.5 * -1.0 * m_maxAcceleration * (t_decel * t_decel));
+          }
+      }
+
+      return p;
+  }
   
-  public MotionWayPoint getCurrentWaypoint(double time) {
-	  for(int i = m_prevWaypoint; i < m_waypoints.length - 1; i++) {
-		  if(time >= m_waypoints[i].m_time && time < m_waypoints[i+1].m_time) {
-			  m_prevWaypoint = i;
-			  
-			  return m_waypoints[i];
-		  }
-	  }
-	  
-	  return null;
+  public void printGoalDetails() {
+      System.out.println("m_maxVelocity:" + m_maxVelocity);
+      System.out.println("m_maxAcceleration:" + m_maxAcceleration);
+      System.out.println("m_timeUntilMaxVelocity:" + m_timeUntilMaxVelocity);
+      System.out.println("m_positionAtMaxVelocity:" + m_positionAtMaxVelocity);
+      System.out.println("m_timeSpentCruising:" + m_timeSpentCruising);
+      System.out.println("m_positionAtEndOfCruise:" + m_positionAtEndOfCruise);
+      System.out.println("m_timeAtEndOfCruise:" + m_timeAtEndOfCruise);
+  }
+
+  public void printPoints() {
+      double t;
+      System.out.println("Time,Position,Velocity,Acceleration");
+      for (t = 0.0; t <= (2 * m_timeUntilMaxVelocity) + m_timeSpentCruising; t += 0.05) {
+          MotionWayPoint p = getCurrentWaypoint(t);
+          System.out.println(p.m_time + "," + p.m_position + "," + p.m_expectedVelocity + "," + p.m_expectedAcceleration);
+      }
   }
 
   /**
