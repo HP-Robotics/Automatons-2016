@@ -390,13 +390,14 @@ public class Robot extends IterativeRobot {
     	
     	leftSpeed = Math.pow(-leftSpeed, 3.0);
     	rightSpeed = Math.pow(-rightSpeed, 3.0);
-    	System.out.println(tankDriveEnabled);
     	
     	//drive motors using calculated speeds
     	intake.set(intakeSpeed);
     	shooter.set(shooterSpeed);
     	
     	goGyro();
+    	//QUICKCLICK tank drive
+    	
     	if(tankDriveEnabled) {
     		driveRobot(leftSpeed, rightSpeed);
     	} else if(slowDriveEnabled) {
@@ -663,6 +664,9 @@ public class Robot extends IterativeRobot {
     public void goNoDrifting(double outputMagnitude, double curve, double minimum, double sensitivity) {
         double leftOutput, rightOutput;
         
+        if (Math.abs(outputMagnitude) < minimum)
+        	minimum = Math.abs(outputMagnitude);
+        
         if (curve < 0) {
           double value = Math.log(-curve);
           double ratio = (value - sensitivity) / (value + sensitivity);
@@ -683,10 +687,10 @@ public class Robot extends IterativeRobot {
           leftOutput = outputMagnitude;
           rightOutput = outputMagnitude;
         }
-        if(Math.abs(leftOutput)<Math.abs(minimum)){
+        if(Math.abs(leftOutput)<Math.abs(minimum)) {
         	leftOutput = minimum;
         }
-        if(Math.abs(rightOutput)<Math.abs(minimum)){
+        if(Math.abs(rightOutput)<Math.abs(minimum)) {
         	rightOutput = minimum;
         }
         driveRobot(leftOutput, rightOutput);
