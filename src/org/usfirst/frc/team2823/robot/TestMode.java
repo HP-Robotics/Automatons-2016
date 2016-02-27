@@ -16,6 +16,7 @@ public class TestMode {
 		robot.lDriveEncoder.reset();
 		robot.rDriveEncoder.reset();
 		
+		robot.motionDriveControl.configureGoal(50, Robot.MAXVELOCITY, Robot.MAXACCELERATION);
 		//robot.armControl.setSetpoint(Robot.HIGHTRAVELSETPOINT);
 		//robot.armControl.enable();
 		
@@ -23,18 +24,30 @@ public class TestMode {
 		//robot.gyroDriveControl.enable();
 		
 		//robot.gyroDriveControl.setSetpoint(SmartDashboard.getNumber("TestGyro Target (Inches)"));
-		
-		initTime = Timer.getFPGATimestamp();
-		double power = SmartDashboard.getNumber("TestDrive Power");
-		robot.driveRobot(power, power);
 	}
 	
 	public void testPeriodic() {
-		//robot.gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
+		robot.motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
 		
-		if((Timer.getFPGATimestamp() - initTime) > 2) {
-			robot.driveRobot(0.0, 0.0);
-		}
+    	if(robot.stick.getRawButton(Robot.ABUTTON)) {
+    		if (!robot.motionDriveEnabled) {
+    			robot.motionDriveEnabled = true;
+    			robot.tankDriveEnabled = false;
+    			robot.slowDriveEnabled = false;
+
+    			robot.motionDriveControl.enableLog("motionControlPID.csv");
+    			robot.motionDriveControl.configureGoal(50, Robot.MAXVELOCITY, Robot.MAXACCELERATION);
+    			robot.motionDriveControl.enable();
+    		}
+    		
+    	} else if(robot.motionDriveEnabled) {
+    		robot.motionDriveEnabled = false;
+    		robot.tankDriveEnabled = true;
+    		robot.slowDriveEnabled = false;
+    		
+    		robot.motionDriveControl.disable();
+    		robot.motionDriveControl.closeLog();
+    	}
 		
 		SmartDashboard.putNumber("Left Encoder (Inches)", Robot.driveEncoderToInches(robot.lDriveEncoder.get()));
 		SmartDashboard.putNumber("Right Encoder (Inches)", Robot.driveEncoderToInches(robot.rDriveEncoder.get()));

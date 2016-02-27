@@ -325,26 +325,6 @@ public class Robot extends IterativeRobot {
     			manualArmEnabled = true;
     		}
     	}*/
-    	
-    	if(stick.getRawButton(ABUTTON)) {
-    		if (!motionDriveEnabled) {
-    			motionDriveEnabled = true;
-    			tankDriveEnabled = false;
-    			slowDriveEnabled = false;
-
-    			motionDriveControl.enableLog("motionControlPID.csv");
-    			motionDriveControl.configureGoal(50, MAXVELOCITY, MAXACCELERATION);
-    			motionDriveControl.enable();
-    		}
-    		
-    	} else if(motionDriveEnabled) {
-    		motionDriveEnabled = false;
-    		tankDriveEnabled = true;
-    		slowDriveEnabled = false;
-    		
-    		motionDriveControl.disable();
-    		motionDriveControl.closeLog();
-    	}
     	    	
     	//raise arm to next setpoint, unless arm is at 90 (shoot setpoint)
     	if(armUpState.updateState(stick.getRawButton(RBUMPER))) {
@@ -403,15 +383,19 @@ public class Robot extends IterativeRobot {
     	leftSpeed = (Math.abs(stick.getRawAxis(LEFTAXIS)) < DRIVETHRESHOLD ? 0.0 : stick.getRawAxis(LEFTAXIS));
     	rightSpeed = (Math.abs(stick.getRawAxis(RIGHTAXIS)) < DRIVETHRESHOLD ? 0.0 : stick.getRawAxis(RIGHTAXIS));
     	
+    	leftSpeed = Math.pow(-leftSpeed, 3.0);
+    	rightSpeed = Math.pow(-rightSpeed, 3.0);
+    	System.out.println(tankDriveEnabled);
+    	
     	//drive motors using calculated speeds
     	intake.set(intakeSpeed);
     	shooter.set(shooterSpeed);
     	
     	goGyro();
     	if(tankDriveEnabled) {
-    		driveRobot(Math.pow(-leftSpeed, 3.0), Math.pow(-rightSpeed, 3.0));
+    		driveRobot(leftSpeed, rightSpeed);
     	} else if(slowDriveEnabled) {
-    		driveRobot(Math.pow(leftSpeed * -0.2, 3.0), Math.pow(rightSpeed * -0.2, 3.0));
+    		driveRobot(leftSpeed * 0.2, rightSpeed * 0.2);
     	}
     	
     	//send data to Smart Dashboard
