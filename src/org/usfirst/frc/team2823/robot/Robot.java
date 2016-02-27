@@ -1,6 +1,7 @@
 package org.usfirst.frc.team2823.robot;
 
 //import edu.wpi.first.wpilibj.CameraServer;
+import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
@@ -51,10 +52,21 @@ public class Robot extends IterativeRobot {
 	
 	static final double DRIVETHRESHOLD = 0.05;
 	
+
+	final static double[] LEFTVOLTAGES = new double[] { 2.0, 1.79, 1.64, 1.38, 1.24, 1.13, 1.03, 0.93, 0.88, 0.82, 0.78, 0.73, 0.67, 0.61, 0.58,
+														0.56, 0.54, 0.52, 0.50, 0.49, 0.48 };
+	final static double[] LEFTDISTANCES = new double[] { -0.5, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36 };
+
+	final static double[] RIGHTVOLTAGES = new double[] { 2.0, 1.80, 1.50, 1.37, 1.22, 1.11, 1.02, 0.90, 0.89, 0.83, 0.78, 0.73, 0.69, 0.63, 0.60,
+														0.56, 0.53, 0.460, 0.39, 0.37, 0.34 };
+	final static double[] RIGHTDISTANCES = new double[] { -0.5, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36 };
+	
 	/*declare drive-related objects and variables*/
 	Encoder lDriveEncoder;
 	Encoder rDriveEncoder;
 	ADXRS450_Gyro gyro;
+	AnalogInput leftIR;
+	AnalogInput rightIR;
 	
 	VictorSP lDrive1;
 	VictorSP lDrive2;
@@ -129,6 +141,8 @@ public class Robot extends IterativeRobot {
 	Joystick stick;
 	
 	ToggleSwitch encoderResetState;
+	
+	
 	
 	/* this class tracks a mode switch, e.g. press X to switch
 	 * to PID drive, press again to switch back to tank drive */
@@ -407,10 +421,13 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
     	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
     	SmartDashboard.putNumber("Left Encoder (Inches)", driveEncoderToInches(lDriveEncoder.get()));
-    	
     	SmartDashboard.putNumber("Arm Encoder", armEncoder.get());
     	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
     	SmartDashboard.putNumber("ActualShooterSpeed", shooterCounter.getRateInRPMs());
+    	SmartDashboard.putNumber("Left IR (Raw)", leftIR.getVoltage());
+    	SmartDashboard.putNumber("Left IR (Inches)", voltageToDistance(leftIR.getVoltage(), LEFTVOLTAGES, LEFTDISTANCES));
+    	SmartDashboard.putNumber("Right IR (Raw)", rightIR.getVoltage());
+    	SmartDashboard.putNumber("Right IR (Inches)", voltageToDistance(rightIR.getVoltage(), RIGHTVOLTAGES, RIGHTDISTANCES));
     	SmartDashboard.putBoolean("Lower Limit", lowerLimitSwitch.get());
     	SmartDashboard.putBoolean("Upper Limit", upperLimitSwitch.get());
     	SmartDashboard.putString("Intake", intakeOn);
@@ -613,6 +630,36 @@ public class Robot extends IterativeRobot {
 		//armControl.closeLog();
     }
     
+    public double leftIRToDistance() {
+		return voltageToDistance(leftIR.getAverageVoltage(),
+				LEFTVOLTAGES, LEFTDISTANCES);
+	}
+
+	public double rightIRToDistance() {
+		return voltageToDistance(rightIR.getAverageVoltage(),
+				RIGHTVOLTAGES, RIGHTDISTANCES);
+	}
+
+	public double voltageToDistance(double v, double[] voltages, double[] distances) {
+		int i = 0;
+		while (i < voltages.length && v < voltages[i]) {
+			i++;
+		}
+
+		if (i == 0) {
+			return -1;
+		}
+		if (i >= voltages.length) {
+			return 40;
+		}
+
+		double d2 = distances[i];
+		double d1 = distances[i - 1];
+		double v2 = voltages[i];
+		double v1 = voltages[i - 1];
+		return (d2 - d1) * (v - v1) / (v2 - v1) + d1;
+	}
+    
 	public static double driveInchesToEncoder(double i) {
 		return i * ENCODER_RESOLUTION / (2 * Math.PI * R * DRIVE_RATIO);
 	}
@@ -752,6 +799,10 @@ public class Robot extends IterativeRobot {
     	rDriveEncoder = new Encoder(2, 3, true, EncodingType.k4X);
     	lDriveEncoder.reset();
     	rDriveEncoder.reset();
+    	
+    	leftIR = new AnalogInput(0);
+    	rightIR = new AnalogInput(1);
+    	
     	
     	gyro = new ADXRS450_Gyro(Port.kOnboardCS0);
     	
