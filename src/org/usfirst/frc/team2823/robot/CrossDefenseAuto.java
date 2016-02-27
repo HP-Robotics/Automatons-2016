@@ -58,7 +58,7 @@ public class CrossDefenseAuto extends AutoMode {
 			if(!SmartDashboard.getBoolean("Lowbar?")) {
 				robot.armControl.setSetpoint(Robot.MIDSETPOINT);
 			} else {
-				robot.armControl.setSetpoint(Robot.INTAKESETPOINT);
+				robot.armControl.setSetpoint(Robot.LOWTRAVELSETPOINT);
 			}
 			
 			stageData[stage].entered = true;

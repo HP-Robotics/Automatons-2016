@@ -73,7 +73,7 @@ public class CrossAndShootAuto extends AutoMode {
 			if(!SmartDashboard.getBoolean("Lowbar?")) {
 				robot.armControl.setSetpoint(Robot.MIDSETPOINT);
 			} else {
-				robot.armControl.setSetpoint(Robot.INTAKESETPOINT);
+				robot.armControl.setSetpoint(Robot.LOWTRAVELSETPOINT);
 			}
 			
 			stageData[stage].entered = true;
@@ -158,7 +158,7 @@ public class CrossAndShootAuto extends AutoMode {
 		
 		//run entry code
 		if(!stageData[stage].entered) {
-			robot.trigger.setAngle(robot.TRIGGERONPOSITION);
+			robot.trigger.setAngle(Robot.TRIGGERONPOSITION);
 			
 			stageData[stage].entered = true;
 		}
@@ -169,7 +169,7 @@ public void turnOffTrigger() {
 		
 		//run entry code
 		if(!stageData[stage].entered) {
-			robot.trigger.setAngle(robot.TRIGGEROFFPOSITION);
+			robot.trigger.setAngle(Robot.TRIGGEROFFPOSITION);
 			
 			stageData[stage].entered = true;
 		}
