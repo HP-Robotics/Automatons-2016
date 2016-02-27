@@ -46,6 +46,11 @@ public class Robot extends IterativeRobot {
 	static final int LTRIGGER = 7;
 	static final int RTRIGGER = 8;
 	
+	static final int LEFTAXIS = 1;
+	static final int RIGHTAXIS = 3;
+	
+	static final double DRIVETHRESHOLD = 0.05;
+	
 	/*declare drive-related objects and variables*/
 	Encoder lDriveEncoder;
 	Encoder rDriveEncoder;
@@ -379,15 +384,19 @@ public class Robot extends IterativeRobot {
     		
     	}
     	
+    	//calculate drive speeds
+    	leftSpeed = (Math.abs(stick.getRawAxis(LEFTAXIS)) < DRIVETHRESHOLD ? 0.0 : stick.getRawAxis(LEFTAXIS));
+    	rightSpeed = (Math.abs(stick.getRawAxis(RIGHTAXIS)) < DRIVETHRESHOLD ? 0.0 : stick.getRawAxis(RIGHTAXIS));
+    	
     	//drive motors using calculated speeds
     	intake.set(intakeSpeed);
     	shooter.set(shooterSpeed);
     	
     	goGyro();
     	if(tankDriveEnabled) {
-    		driveRobot(stick.getRawAxis(XBUTTON) * -0.75, stick.getRawAxis(BBUTTON) * -0.75);
+    		driveRobot(leftSpeed * -0.75, rightSpeed * -0.75);
     	} else if(slowDriveEnabled) {
-    		driveRobot(stick.getRawAxis(XBUTTON) * -0.2, stick.getRawAxis(BBUTTON) * -0.2);
+    		driveRobot(leftSpeed * -0.2, rightSpeed * -0.2);
     	}
     	
     	//send data to Smart Dashboard
