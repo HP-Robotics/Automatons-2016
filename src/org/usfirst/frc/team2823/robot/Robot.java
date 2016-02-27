@@ -1,7 +1,7 @@
 package org.usfirst.frc.team2823.robot;
 
-//import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
@@ -211,10 +211,10 @@ public class Robot extends IterativeRobot {
     	testMode = new TestMode(this);
     	
     	//create USB camera
-    	//CameraServer camera;
-    	//camera = CameraServer.getInstance();
-    	//camera.setQuality(50);
-    	//camera.startAutomaticCapture("cam0");
+    	CameraServer camera;
+    	camera = CameraServer.getInstance();
+    	camera.setQuality(50);
+    	camera.startAutomaticCapture("cam0");
     	
     	//create joystick
     	stick = new Joystick(0);
@@ -442,7 +442,7 @@ public class Robot extends IterativeRobot {
     	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	//armControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	//gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
-    	//motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
+    	motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	
     }
     
