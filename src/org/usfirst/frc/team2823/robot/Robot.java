@@ -325,30 +325,7 @@ public class Robot extends IterativeRobot {
     		motionDriveControl.disable();
     		motionDriveControl.closeLog();
     	}
-    	
-    	/*
-    	if(armUpState.updateState(stick.getRawButton(RBUMPER))) {
-    		if(armEncoder.get() < (HIGHTRAVELSETPOINT + OFFSET)) {
-    			disableArmPid();
-    			turnIntakeOff();
-    			armControl.setSetpoint(SHOOTSETPOINT);
-    			currentSetpoint = "Shoot";
-    			enableArmPid();
-    			
-    		} else if(armEncoder.get() < (MIDSETPOINT + OFFSET)) {
-    			disableArmPid();
-    			armControl.setSetpoint(HIGHTRAVELSETPOINT);
-    			currentSetpoint = "High Travel";
-    			enableArmPid();
-    			
-    		} else {
-    			disableArmPid();
-    			armControl.setSetpoint(MIDSETPOINT);
-    			currentSetpoint = "Mid";
-    			enableArmPid();
-    		}
-    	}*/
-    	
+    	    	
     	//raise arm to next setpoint, unless arm is at 90 (shoot setpoint)
     	if(armUpState.updateState(stick.getRawButton(RBUMPER))) {
     		if(currentSetpoint > 0) {
@@ -370,28 +347,6 @@ public class Robot extends IterativeRobot {
     			enableArmPid();
     		}
     	}
-    	
-    	/*
-    	if(armDownState.updateState(stick.getRawButton(RTRIGGER))) {
-    		if(armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)) {
-    			disableArmPid();
-    			armControl.setSetpoint(HIGHTRAVELSETPOINT);
-    			currentSetpoint = "High Travel";
-    			enableArmPid();
-    			
-    		} else if(armEncoder.get() < (MIDSETPOINT - OFFSET)) {
-    			disableArmPid();
-    			armControl.setSetpoint(MIDSETPOINT);
-    			currentSetpoint = "Mid";
-    			enableArmPid();
-    			
-    		} else {
-    			disableArmPid();
-    			armControl.setSetpoint(LOWTRAVELSETPOINT);
-    			currentSetpoint = "Intake";
-    			enableArmPid();
-    		}
-    	}*/
     	
     	if(stick.getRawButton(YBUTTON) && !manualArmEnabled) {
     		disableArmPid();

@@ -72,8 +72,10 @@ public class CrossAndShootAuto extends AutoMode {
 			//determine setpoint based on SmartDashboard input
 			if(!SmartDashboard.getBoolean("Lowbar?")) {
 				robot.armControl.setSetpoint(Robot.MIDSETPOINT);
+				robot.currentSetpoint = 2;
 			} else {
 				robot.armControl.setSetpoint(Robot.LOWTRAVELSETPOINT);
+				robot.currentSetpoint = 3;
 			}
 			
 			stageData[stage].entered = true;
@@ -135,6 +137,7 @@ public class CrossAndShootAuto extends AutoMode {
 			
 			robot.armControl.enable();
 			robot.armControl.setSetpoint(Robot.SHOOTSETPOINT);
+			robot.currentSetpoint = 0;
 			
 			stageData[stage].entered = true;
 		}
