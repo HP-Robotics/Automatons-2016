@@ -31,7 +31,7 @@ public class Robot extends IterativeRobot {
 	static final int SHOOTSETPOINT = 0;
 	static final int HIGHTRAVELSETPOINT = 600;
 	static final int MIDSETPOINT = 1800;
-	static final int LOWTRAVELSETPOINT = 2320;
+	static final int LOWTRAVELSETPOINT = 2280;
 	static final int INTAKESETPOINT = 2400;
 	static final int OFFSET = 100;
 	
