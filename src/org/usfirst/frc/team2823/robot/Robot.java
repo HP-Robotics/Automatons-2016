@@ -495,9 +495,8 @@ public class Robot extends IterativeRobot {
     
     //QUICKCLICK set motor speeds
     public void setIntakeSpeed() {
-    	//set intake using left trigger and left bumper
-    	if(intakeState.updateState(stick1.getRawButton(LBUMPER))) {
-    		System.out.println("Updated button");
+    	//set intake using dpad
+    	 if(intakeState.updateState(stick1.getPOV() >= 135 && stick1.getPOV()<= 225)) {
     		if(intakeState.switchEnabled()) {
     			intakeSpeed = -1.0;
     			intakeOn = "In";
@@ -508,9 +507,8 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
-    	if(intakeEnableState.updateState(stick1.getRawButton(LTRIGGER)) ) {
-    		turnIntakeOff();
-    		
+    	if(intakeEnableState.updateState(stick1.getPOV() >= 0 && stick1.getPOV() <= 45) || (stick1.getPOV()>=315)) {
+    		turnIntakeOff();	
     	}
     }
     
@@ -742,7 +740,8 @@ public class Robot extends IterativeRobot {
     		gyroDrive = false;
     		return;
     	}
-    	if((stick1.getPOV() >= 0 && stick1.getPOV() <= 45) || (stick1.getPOV()>=315)) {
+    	
+    	if (stick1.getRawButton(LTRIGGER)){
     		goNoDrifting(0.7, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.5, 0.5);
     		if(!gyroDrive){
     			gyroReset();
@@ -751,7 +750,8 @@ public class Robot extends IterativeRobot {
     			slowDriveEnabled = false;
     		}
     		
-    	} else if(stick1.getPOV() >= 135 && stick1.getPOV()<= 225) {
+    	} 
+    	else if(stick1.getRawButton(LBUMPER)){
     		goNoDrifting(-0.7, gyro.getAngle() * SmartDashboard.getNumber("k_angle"), -0.5, 0.5);
     		if(!gyroDrive){
     			gyroReset();
