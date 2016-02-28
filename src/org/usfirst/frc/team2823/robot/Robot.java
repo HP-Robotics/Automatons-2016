@@ -35,6 +35,10 @@ public class Robot extends IterativeRobot {
 	static final int INTAKESETPOINT = 2400;
 	static final int OFFSET = 100;
 	
+	static final double FARSPEED = 3400.0;
+	static final double MIDSPEED = 3200.0;
+	static final double CLOSESPEED = 3900.0;
+	
 	static final int TRIGGEROFFPOSITION = 110;
 	static final int TRIGGERONPOSITION = 80;
 	
@@ -110,7 +114,11 @@ public class Robot extends IterativeRobot {
 	ATM2016Counter shooterCounter;
 	ATM2016PIDController shooterSpeedControl;
 	
+	ToggleSwitch RPMState;
+	
 	double shooterSpeed = 0.0;
+	int currentTargetRPM = 1;
+	double[] shooterTargetRPMs = {FARSPEED, MIDSPEED, CLOSESPEED};
 	
 	/*declare arm-related objects and variables*/
 	DigitalInput upperLimitSwitch;
@@ -352,13 +360,13 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
-    	if(stick.getRawButton(YBUTTON) && !manualArmEnabled) {
+    	/*if(stick.getRawButton(YBUTTON) && !manualArmEnabled) {
     		disableArmPid();
     		armControl.closeLog();
     		
     	} else if(manualArmEnabled) {
     		manualArmEnabled = false;
-    	}
+    	}*/
     	
     	//FIXME remove true and false before competition!!!!!!!!
     	if (!gyroDrive && !motionDriveEnabled) {
@@ -405,6 +413,13 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//send data to Smart Dashboard
+    	/**
+    	 * TgtShtrSpeed: 3900 up close (0 robot widths)
+    	 * TgtShtrSpeed: 3200 @ 1 robot width
+    	 * TgtShtrSpeed: 3300 @ 2 robot widths
+    	 * TgtShtrSpeed: 3400 far away (3 robot widths)
+    	 */
+    	SmartDashboard.putNumber("TargetShooterSpeed", shooterTargetRPMs[currentTargetRPM]);
     	SmartDashboard.putNumber("Speed", shooterSpeed);
     	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
     	SmartDashboard.putNumber("rDrive", rDrive1.getSpeed());
@@ -504,7 +519,7 @@ public class Robot extends IterativeRobot {
     			System.out.println("Shooter PID should be on");
     			shooterSpeedControl.enableLog("ShootPID.csv");
     			shooterSpeedControl.enable();
-    			shooterSpeedControl.setSetpointInRPMs(SmartDashboard.getNumber("TargetShooterSpeed"));
+    			shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
     			
     			//tankDriveEnabled = false;
     			
@@ -517,6 +532,10 @@ public class Robot extends IterativeRobot {
         		//tankDriveEnabled = true;
         		
     		}
+    	}
+    	if(RPMState.updateState(stick.getRawButton(YBUTTON))){
+    		currentTargetRPM = (currentTargetRPM + 1) % shooterTargetRPMs.length;
+    		shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
     	}
     }
     
@@ -843,6 +862,7 @@ public class Robot extends IterativeRobot {
     	shooterSpeedControl.setOutputRange(-1.0, 0.0);  
     	
     	pidState = new ToggleSwitch();
+    	RPMState = new ToggleSwitch();
     }
     
     //create objects to run the arm system
@@ -866,13 +886,7 @@ public class Robot extends IterativeRobot {
     
     //put initial values to the SmartDashboard
     public void putSmartDashboardValues() {
-    	/**
-    	 * TgtShtrSpeed: 3900 up close (0 robot widths)
-    	 * TgtShtrSpeed: 3500 @ 1 robot width
-    	 * TgtShtrSpeed: 3400 @ 2 robot widths
-    	 * TgtShtrSpeed: 3300 far away (3 robot widths)
-    	 */
-    	SmartDashboard.putNumber("TargetShooterSpeed", 3300);
+
     	SmartDashboard.putNumber("P", 0.05);
     	SmartDashboard.putNumber("I", 0.00015);
     	SmartDashboard.putNumber("D", 0.05);
