@@ -348,7 +348,7 @@ public class Robot extends IterativeRobot {
     	}*/
     	    	
     	//raise arm to next setpoint, unless arm is at 90 (shoot setpoint)
-    	if(armUpState.updateState(stick1.getRawButton(RBUMPER))) {
+    	if(armUpState.updateState(stick1.getRawButton(RBUMPER)|| stick2.getRawButton(RBUMPER))) {
     		if(currentSetpoint > 0) {
     			currentSetpoint--;
     			
@@ -359,7 +359,7 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//lower arm to next setpoint, unless arm is at intake setpoint
-    	if(armDownState.updateState(stick1.getRawButton(RTRIGGER))) {
+    	if(armDownState.updateState(stick1.getRawButton(RTRIGGER)|| stick2.getRawButton(RTRIGGER))) {
     		if(currentSetpoint < setpoints.length-1) {
     			currentSetpoint++;
     			
