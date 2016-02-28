@@ -864,5 +864,3 @@ public class Robot extends IterativeRobot {
     	trigger.setAngle(TRIGGEROFFPOSITION);
     }
  }
-
-//this is not a test
