@@ -45,6 +45,5 @@ public class TalkToPi {
 		DatagramPacket sendPacket = new DatagramPacket(sendData,
 				sendData.length, pi, 5201);
 		serverSocket.send(sendPacket);
-		System.out.println(command);
 	}
 }
