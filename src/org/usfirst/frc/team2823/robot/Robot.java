@@ -151,7 +151,9 @@ public class Robot extends IterativeRobot {
 	TestMode testMode;
 	
 	/*declare joystick and button press-related objects*/
-	Joystick stick;
+	Joystick stick1;
+	Joystick stick2;
+	
 	
 	ToggleSwitch encoderResetState;
 	
@@ -226,8 +228,8 @@ public class Robot extends IterativeRobot {
     	camera.startAutomaticCapture("cam0");
     	
     	//create joystick
-    	stick = new Joystick(0);
-    	
+    	stick1 = new Joystick(0);
+    	stick2 = new Joystick(1);
     }
     
     public void autonomousInit() {
@@ -280,7 +282,8 @@ public class Robot extends IterativeRobot {
     public void teleopPeriodic() {
     	
     	//run the trigger only if the shooter wheel is at speed
-    	if(stick.getRawButton(BBUTTON) && (true || (shooterIsAtSpeed() && armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)))) {
+    	if((stick1.getRawButton(BBUTTON) || stick2.getRawButton(BBUTTON)) 
+    			&& (true || (shooterIsAtSpeed() && armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)))) {
     		//FIXME restore this before competition!
     		//FIXME
     		//FIXME !!!!!!!!!!!!!!!!!!
@@ -345,7 +348,7 @@ public class Robot extends IterativeRobot {
     	}*/
     	    	
     	//raise arm to next setpoint, unless arm is at 90 (shoot setpoint)
-    	if(armUpState.updateState(stick.getRawButton(RBUMPER))) {
+    	if(armUpState.updateState(stick1.getRawButton(RBUMPER))) {
     		if(currentSetpoint > 0) {
     			currentSetpoint--;
     			
@@ -356,7 +359,7 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//lower arm to next setpoint, unless arm is at intake setpoint
-    	if(armUpState.updateState(stick.getRawButton(RTRIGGER))) {
+    	if(armUpState.updateState(stick1.getRawButton(RTRIGGER))) {
     		if(currentSetpoint < setpoints.length) {
     			currentSetpoint++;
     			
@@ -399,8 +402,8 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//calculate drive speeds
-    	leftSpeed = (Math.abs(stick.getRawAxis(LEFTAXIS)) < DRIVETHRESHOLD ? 0.0 : stick.getRawAxis(LEFTAXIS));
-    	rightSpeed = (Math.abs(stick.getRawAxis(RIGHTAXIS)) < DRIVETHRESHOLD ? 0.0 : stick.getRawAxis(RIGHTAXIS));
+    	leftSpeed = (Math.abs(stick1.getRawAxis(LEFTAXIS)) < DRIVETHRESHOLD ? 0.0 : stick1.getRawAxis(LEFTAXIS));
+    	rightSpeed = (Math.abs(stick1.getRawAxis(RIGHTAXIS)) < DRIVETHRESHOLD ? 0.0 : stick1.getRawAxis(RIGHTAXIS));
     	
     	leftSpeed = Math.pow(-leftSpeed, 3.0);
     	rightSpeed = Math.pow(-rightSpeed, 3.0);
@@ -493,7 +496,7 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK set motor speeds
     public void setIntakeSpeed() {
     	//set intake using left trigger and left bumper
-    	if(intakeState.updateState(stick.getRawButton(LBUMPER))) {
+    	if(intakeState.updateState(stick1.getRawButton(LBUMPER))) {
     		System.out.println("Updated button");
     		if(intakeState.switchEnabled()) {
     			intakeSpeed = -1.0;
@@ -505,7 +508,7 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
-    	if(intakeEnableState.updateState(stick.getRawButton(LTRIGGER)) ) {
+    	if(intakeEnableState.updateState(stick1.getRawButton(LTRIGGER)) ) {
     		turnIntakeOff();
     		
     	}
@@ -519,7 +522,7 @@ public class Robot extends IterativeRobot {
     
     public void setShooterSpeed() {
     	//if the X button is pressed, use PID to drive shooter wheel
-    	if(pidState.updateState(stick.getRawButton(XBUTTON))) {
+    	if(pidState.updateState(stick1.getRawButton(XBUTTON))) {
     		System.out.println("Updated button");
     		if(pidState.switchEnabled()) {
     			System.out.println("Shooter PID should be on");
@@ -539,7 +542,7 @@ public class Robot extends IterativeRobot {
         		
     		}
     	}
-    	if(RPMState.updateState(stick.getRawButton(YBUTTON))){
+    	if(RPMState.updateState(stick1.getRawButton(YBUTTON)||stick2.getRawButton(YBUTTON))){
     		currentTargetRPM = (currentTargetRPM + 1) % shooterTargetRPMs.length;
     		shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
     		TalkToPi.rawCommand("RPM " + shooterTargetRPMs[currentTargetRPM]);
@@ -548,10 +551,10 @@ public class Robot extends IterativeRobot {
     
     public void setArmSpeed() {
     	//set the arm speed using the left and right bumper
-    	if(stick.getRawButton(RBUMPER) && !upperLimitSwitch.get()){
+    	if(stick1.getRawButton(RBUMPER) && !upperLimitSwitch.get()){
     		armSpeed = -SmartDashboard.getNumber("Arm Speed");
     	}
-    	else if(stick.getRawButton(RTRIGGER)/* && !lowerLimitSwitch.get()*/){
+    	else if(stick1.getRawButton(RTRIGGER)/* && !lowerLimitSwitch.get()*/){
     		armSpeed = SmartDashboard.getNumber("Arm Speed");
     	}
     	else {
@@ -739,7 +742,7 @@ public class Robot extends IterativeRobot {
     		gyroDrive = false;
     		return;
     	}
-    	if((stick.getPOV() >= 0 && stick.getPOV() <= 45) || (stick.getPOV()>=315)) {
+    	if((stick1.getPOV() >= 0 && stick1.getPOV() <= 45) || (stick1.getPOV()>=315)) {
     		goNoDrifting(0.7, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.5, 0.5);
     		if(!gyroDrive){
     			gyroReset();
@@ -748,7 +751,7 @@ public class Robot extends IterativeRobot {
     			slowDriveEnabled = false;
     		}
     		
-    	} else if(stick.getPOV() >= 135 && stick.getPOV()<= 225) {
+    	} else if(stick1.getPOV() >= 135 && stick1.getPOV()<= 225) {
     		goNoDrifting(-0.7, gyro.getAngle() * SmartDashboard.getNumber("k_angle"), -0.5, 0.5);
     		if(!gyroDrive){
     			gyroReset();
@@ -756,7 +759,7 @@ public class Robot extends IterativeRobot {
     			tankDriveEnabled = false;
     			slowDriveEnabled = false;
     		}
-    	}else if(stick.getPOV() == 90) {
+    	}else if(stick1.getPOV() == 90) {
     		if(!gyroDrive){
     			gyroReset();
     			turnControl.setSetpoint(90);
@@ -767,7 +770,7 @@ public class Robot extends IterativeRobot {
     			tankDriveEnabled = false;
     			slowDriveEnabled = false;
     		}
-    	} else if(stick.getPOV() == 270) {
+    	} else if(stick1.getPOV() == 270) {
     		if(!gyroDrive){
     			gyroReset();
     			turnControl.setSetpoint(-90);
