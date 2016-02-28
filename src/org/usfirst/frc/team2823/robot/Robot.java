@@ -152,8 +152,6 @@ public class Robot extends IterativeRobot {
 	
 	ToggleSwitch encoderResetState;
 	
-	
-	
 	/* this class tracks a mode switch, e.g. press X to switch
 	 * to PID drive, press again to switch back to tank drive */
 	static class ToggleSwitch {
@@ -536,6 +534,7 @@ public class Robot extends IterativeRobot {
     	if(RPMState.updateState(stick.getRawButton(YBUTTON))){
     		currentTargetRPM = (currentTargetRPM + 1) % shooterTargetRPMs.length;
     		shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
+    		TalkToPi.rawCommand("RPM " + shooterTargetRPMs[currentTargetRPM]);
     	}
     }
     
