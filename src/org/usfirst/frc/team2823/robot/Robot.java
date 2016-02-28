@@ -119,6 +119,7 @@ public class Robot extends IterativeRobot {
 	double shooterSpeed = 0.0;
 	int currentTargetRPM = 1;
 	double[] shooterTargetRPMs = {FARSPEED, MIDSPEED, CLOSESPEED};
+	String[] shooterTargetNames = {"Far Away", "Mid", "CLose Up"};
 	
 	/*declare arm-related objects and variables*/
 	DigitalInput upperLimitSwitch;
@@ -424,7 +425,7 @@ public class Robot extends IterativeRobot {
     	 * TgtShtrSpeed: 3300 @ 2 robot widths
     	 * TgtShtrSpeed: 3400 far away (3 robot widths)
     	 */
-    	SmartDashboard.putNumber("TargetShooterSpeed", shooterTargetRPMs[currentTargetRPM]);
+    	SmartDashboard.putString("ShooterTargetRPM", shooterTargetRPMs[currentTargetRPM] + "( " + shooterTargetNames[currentTargetRPM] + " )");
     	SmartDashboard.putNumber("Speed", shooterSpeed);
     	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
     	SmartDashboard.putNumber("rDrive", rDrive1.getSpeed());
@@ -563,8 +564,6 @@ public class Robot extends IterativeRobot {
 		@Override
 		public void pidWrite(double output) {
 			SmartDashboard.putNumber("Gyro Drive PIDOutput", output);
-			
-			System.out.println("pidWrite " + output);
 			
 			goNoDrifting(output, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.1, 0.5);
 		}
