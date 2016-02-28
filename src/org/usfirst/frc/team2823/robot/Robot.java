@@ -359,8 +359,8 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//lower arm to next setpoint, unless arm is at intake setpoint
-    	if(armUpState.updateState(stick1.getRawButton(RTRIGGER))) {
-    		if(currentSetpoint < setpoints.length) {
+    	if(armDownState.updateState(stick1.getRawButton(RTRIGGER))) {
+    		if(currentSetpoint < setpoints.length-1) {
     			currentSetpoint++;
     			
     			disableArmPid();
