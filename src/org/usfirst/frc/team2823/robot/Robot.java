@@ -141,6 +141,8 @@ public class Robot extends IterativeRobot {
 	/*declare trigger-related objects and variables*/
 	Servo trigger;
 	
+	boolean watchSent = false;
+	
 	/*declare auto-related objects*/
 	SendableChooser autoChooser;
 	
@@ -283,10 +285,15 @@ public class Robot extends IterativeRobot {
     		//FIXME !!!!!!!!!!!!!!!!!!
     		
     		trigger.setAngle(TRIGGERONPOSITION);
+    		if(!watchSent){
+    			TalkToPi.rawCommand("WATCH");
+    			watchSent = true;
+    		}
     		
     	}
     	else {
     		trigger.setAngle(TRIGGEROFFPOSITION);
+    		watchSent = false;
     	}
     	
     	//Y button

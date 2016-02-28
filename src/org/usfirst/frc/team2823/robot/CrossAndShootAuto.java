@@ -162,6 +162,7 @@ public class CrossAndShootAuto extends AutoMode {
 		//run entry code
 		if(!stageData[stage].entered) {
 			robot.trigger.setAngle(Robot.TRIGGERONPOSITION);
+			TalkToPi.rawCommand("WATCH");
 			
 			stageData[stage].entered = true;
 		}
