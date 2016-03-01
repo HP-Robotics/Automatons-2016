@@ -97,7 +97,7 @@ public class LowBarAndShootAuto extends AutoMode {
 			stageData[stage].entered = true;
 		}
 		
-		//move on to the next stage when the average of the drive encoders (in inches) is within 1 inch of the setpoint
+		//move on to the next stage when the motion plan is finished
 		if(robot.gyroDriveControl.isPlanFinished()) {
 			nextStage();
 		}

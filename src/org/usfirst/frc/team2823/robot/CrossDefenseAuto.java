@@ -10,8 +10,7 @@ public class CrossDefenseAuto extends AutoMode {
 
 	@Override
 	public void autoInit() {
-		//FIXME disable PID controllers at startup!!!
-		double[] timeouts = {1.0, 15.0, 4.0};
+		double[] timeouts = {1.0, 15.0, 5.0};
 		setStageTimeouts(timeouts);
 		robot.gyroReset();
 		startAuto();
@@ -66,8 +65,9 @@ public class CrossDefenseAuto extends AutoMode {
 			stageData[stage].entered = true;
 		}
 		
+		//FIXME remove this true or the robot will crash into something!!
 		//move on to the next stage when the arm is within 100 encoder ticks
-		if(Math.abs(robot.armEncoder.get() - robot.armControl.getSetpoint()) < 100) {
+		if(true || (Math.abs(robot.armEncoder.get() - robot.armControl.getSetpoint()) < 100)) {
 			nextStage();
 		}
 		
@@ -77,16 +77,19 @@ public class CrossDefenseAuto extends AutoMode {
 		//run entry code
 		if(!stageData[stage].entered) {
 			
-			//drive with gyro PID to 50 inches
+			robot.lDriveEncoder.reset();
+			robot.rDriveEncoder.reset();
+			
+			//drive with gyro motion plan over the defense
 			robot.gyroDriveControl.enableLog("autoGyroDrivePID.csv");
+			robot.gyroDriveControl.configureGoal(150, Robot.MAXVELOCITY/2, Robot.MAXACCELERATION/4);
 			robot.gyroDriveControl.enable();
-			robot.gyroDriveControl.setSetpoint(50);
 			
 			stageData[stage].entered = true;
 		}
 		
-		//move on to the next stage when the average of the drive encoders (in inches) is within 1 inch of the setpoint
-		if(Math.abs((Robot.driveEncoderToInches(robot.lDriveEncoder.get() + robot.rDriveEncoder.get()) / 2) - robot.gyroDriveControl.getSetpoint()) < 1) {
+		//move on to the next stage when the motion plan is finished
+		if(robot.gyroDriveControl.isPlanFinished()) {
 			nextStage();
 		}
 	}
