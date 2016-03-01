@@ -41,7 +41,7 @@ public class TestMode {
 			robot.gyroDriveControl.closeLog();
 		}*/
 		
-		if(robot.stick.getRawButton(Robot.ABUTTON)) {
+		if(robot.stick1.getRawButton(Robot.ABUTTON)) {
 			if (!robot.motionDriveEnabled) {
 				robot.lDriveEncoder.reset();
 				robot.rDriveEncoder.reset();
@@ -63,7 +63,7 @@ public class TestMode {
 			robot.motionDriveControl.closeLog();
 		}
     	
-		if(robot.stick.getRawButton(Robot.BBUTTON)){
+		if(robot.stick1.getRawButton(Robot.BBUTTON)){
 			if(!testPIDEnabled) {
 				robot.motionDriveControl.enableLog("motionControlPID.csv");
 				robot.motionDriveControl.setSetpoint(12);
@@ -84,6 +84,30 @@ public class TestMode {
 
 			testPIDEnabled = false;
 		}
+		
+		if(robot.stick1.getRawButton(Robot.XBUTTON)) {
+			if (!robot.gyroDrive) {
+				robot.gyroReset();
+				robot.lDriveEncoder.reset();
+				robot.rDriveEncoder.reset();
+				robot.gyroDrive = true;
+				robot.tankDriveEnabled = false;
+				robot.slowDriveEnabled = false;
+
+				robot.gyroDriveControl.enableLog("motionControlPID.csv");
+				robot.gyroDriveControl.configureGoal(SmartDashboard.getNumber("Motion Plan Target"), Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
+				robot.gyroDriveControl.enable();
+			}
+
+		} else if(robot.gyroDrive) {
+			robot.gyroDrive = false;
+			robot.tankDriveEnabled = true;
+			robot.slowDriveEnabled = false;
+
+			robot.gyroDriveControl.disable();
+			robot.gyroDriveControl.closeLog();
+		}
+		
 		
 		SmartDashboard.putNumber("Left Encoder (Inches)", Robot.driveEncoderToInches(robot.lDriveEncoder.get()));
 		SmartDashboard.putNumber("Right Encoder (Inches)", Robot.driveEncoderToInches(robot.rDriveEncoder.get()));

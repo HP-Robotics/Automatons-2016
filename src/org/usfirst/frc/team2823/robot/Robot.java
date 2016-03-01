@@ -35,7 +35,7 @@ public class Robot extends IterativeRobot {
 	static final int INTAKESETPOINT = 2400;
 	static final int OFFSET = 100;
 	
-	static final double FARSPEED = 3400.0;
+	static final double FARSPEED = 3300.0;
 	static final double MIDSPEED = 3200.0;
 	static final double CLOSESPEED = 3900.0;
 	
@@ -119,7 +119,7 @@ public class Robot extends IterativeRobot {
 	double shooterSpeed = 0.0;
 	int currentTargetRPM = 1;
 	double[] shooterTargetRPMs = {FARSPEED, MIDSPEED, CLOSESPEED};
-	String[] shooterTargetNames = {"Far Away", "Mid", "CLose Up"};
+	String[] shooterTargetNames = {"Far Away", "Mid", "Close Up"};
 	
 	/*declare arm-related objects and variables*/
 	DigitalInput upperLimitSwitch;
@@ -426,7 +426,7 @@ public class Robot extends IterativeRobot {
     	 * TgtShtrSpeed: 3900 up close (0 robot widths)
     	 * TgtShtrSpeed: 3200 @ 1 robot width
     	 * TgtShtrSpeed: 3300 @ 2 robot widths
-    	 * TgtShtrSpeed: 3400 far away (3 robot widths)
+    	 * TgtShtrSpeed: 3300 far away (3 robot widths)
     	 */
     	SmartDashboard.putString("ShooterTargetRPM", shooterTargetRPMs[currentTargetRPM] + "( " + shooterTargetNames[currentTargetRPM] + " )");
     	SmartDashboard.putNumber("Speed", shooterSpeed);
