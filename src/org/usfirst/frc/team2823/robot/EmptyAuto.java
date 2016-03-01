@@ -3,7 +3,7 @@ package org.usfirst.frc.team2823.robot;
 public class EmptyAuto extends AutoMode {
 
 	public EmptyAuto(Robot myBot) {
-		super(myBot);
+		super(myBot, 0);
 	}
 
 	@Override

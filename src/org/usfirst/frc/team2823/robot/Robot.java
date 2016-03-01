@@ -484,7 +484,7 @@ public class Robot extends IterativeRobot {
     
     public boolean shooterIsAtSpeed(double threshold) {
     	double actualSpeed = Math.abs(shooterCounter.getRateInRPMs());
-    	double targetSpeed = Math.abs(SmartDashboard.getNumber("TargetShooterSpeed"));
+    	double targetSpeed = Math.abs(shooterSpeedControl.getSetpoint());
     	
     	if(Math.abs(targetSpeed - actualSpeed) < threshold) {
     		return true;
@@ -908,7 +908,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Arm Target", 0);
     	SmartDashboard.putNumber("Motion Plan Target", 0.0);
     	SmartDashboard.putNumber("TestDrive Power", 0.0);
-    	SmartDashboard.putBoolean("Lowbar?", true);
+    	SmartDashboard.putBoolean("Shoot in Auto?", true);
     		
     }
     
@@ -921,11 +921,12 @@ public class Robot extends IterativeRobot {
     	
     	autoChooser = new SendableChooser();
     	
-		autoChooser.addObject("Empty: Do Nothing", new EmptyAuto(this));
-		autoChooser.addObject("Drive Back", new MoveBackAuto(this));
-		autoChooser.addObject("Cross Defense", new CrossDefenseAuto(this));
-		autoChooser.addObject("Cross Low Bar and Shoot", new LowBarAndShootAuto(this));
-		autoChooser.addDefault("Calibrate", new CalibrateAuto(this));
+		autoChooser.addDefault("Empty: Do Nothing", new EmptyAuto(this));
+		autoChooser.addObject("Defense 1 (Low Bar)", new MainAuto(this, 1));
+		autoChooser.addObject("Defense 2", new MainAuto(this, 2));
+		autoChooser.addObject("Defense 3", new MainAuto(this, 3));
+		autoChooser.addObject("Defense 4", new MainAuto(this, 4));
+		autoChooser.addObject("Defense 5", new MainAuto(this, 5));
 		
     	SmartDashboard.putData("Autonomous Mode", autoChooser);
 		

@@ -6,8 +6,10 @@ import edu.wpi.first.wpilibj.Timer;
 
 public class AutoMode {
 	Robot robot;
-	Timer tick;
-	int stage = 0;
+	Timer m_tick;
+	int m_stage = 0;
+	int m_defense = 0;
+	
 	StageDataElement[] stageData;
 	
 	public class StageDataElement {
@@ -16,8 +18,9 @@ public class AutoMode {
 	}
 	
 	
-	public AutoMode(Robot myBot) {
+	public AutoMode(Robot myBot, int defense) {
 		robot = myBot;
+		m_defense = defense;
 	}
 	
 	public void setStageTimeouts(double[] t) {
@@ -32,11 +35,11 @@ public class AutoMode {
 	}
 	
 	public void startAuto() {
-		stage = 0;
+		m_stage = 0;
 		
-		tick = new Timer();
-		tick.reset();
-		tick.start();
+		m_tick = new Timer();
+		m_tick.reset();
+		m_tick.start();
 	}
 	
 	public void autoInit() {
@@ -49,12 +52,12 @@ public class AutoMode {
 	}
 
 	public boolean checkStageTimeout() {
-		if (stage < 0 || stage >= stageData.length)
+		if (m_stage < 0 || m_stage >= stageData.length)
 			return true;
 	
-		if (tick.get() > stageData[stage].timeout) {
+		if (m_tick.get() > stageData[m_stage].timeout) {
 
-			System.out.printf("stage %d timed out\n", stage);
+			System.out.printf("stage %d timed out\n", m_stage);
 			nextStage();
 			return true;
 		}
@@ -62,11 +65,11 @@ public class AutoMode {
 	}
 	
 	public void nextStage() {
-		System.out.printf("Stage Finished: %d\tTime: %f\tTotal Time:%f\n",stage,tick.get(),DriverStation.getInstance().getMatchTime());
-		tick.reset();
-		stage++;
+		System.out.printf("Stage Finished: %d\tTime: %f\tTotal Time:%f\n",m_stage,m_tick.get(),DriverStation.getInstance().getMatchTime());
+		m_tick.reset();
+		m_stage++;
 		
-		if(stage >= stageData.length) {
+		if(m_stage >= stageData.length) {
 			endAuto();
 		}
 	}
