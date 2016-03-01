@@ -95,6 +95,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   private MotionWayPoint m_currentWaypoint;
   private boolean m_motionPlanEnabled = false;
   private boolean m_planFinished = false;
+  private double m_invertMultiplier = 1.0;
   private double  m_maxVelocity;
   private double  m_maxAcceleration;
   private double  m_timeUntilMaxVelocity;
@@ -317,6 +318,14 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 	  m_motionPlanEnabled = true;
 	  m_planFinished = false;
 	  
+	  //check if goal is negative
+	  if(goal < 0) {
+		  m_invertMultiplier = -1.0;
+		  goal = Math.abs(goal);
+	  } else {
+		  m_invertMultiplier = 1.0;
+	  }
+	  
       double midpoint = goal / 2;
       
       m_maxAcceleration = max_a;
@@ -445,7 +454,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       double result;
       PIDOutput pidOutput = null;
       synchronized (this) {
-        input = pidInput.pidGet();
+        input = pidInput.pidGet() * m_invertMultiplier;
         
         //set current time exactly when the input is obtained (higher accuracy)
         currentTime = Timer.getFPGATimestamp();
@@ -468,7 +477,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
       
       if((currentTime - m_initTime) < m_initMillis / 1000.0) {
     	  synchronized(this) {
-    		  m_pidOutput.pidWrite(m_initPower);
+    		  m_pidOutput.pidWrite(m_initPower * m_invertMultiplier);
     	  }
     	  return;
       }
@@ -556,10 +565,10 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     	  }
       }
       if (m_safeArm){
-    	  pidOutput.pidWrite(safeArm (result));
+    	  pidOutput.pidWrite(safeArm(result) * m_invertMultiplier);
       }
       else{
-	      pidOutput.pidWrite(result);
+	      pidOutput.pidWrite(result * m_invertMultiplier);
       }
 	      
       if(m_logEnabled) {
@@ -811,7 +820,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
    */
   public synchronized double getError() {
     // return m_error;
-    return getSetpoint() - m_pidInput.pidGet();
+    return getSetpoint() - (m_pidInput.pidGet() * m_invertMultiplier);
   }
 
   /**

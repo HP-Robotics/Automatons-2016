@@ -223,10 +223,10 @@ public class Robot extends IterativeRobot {
     	testMode = new TestMode(this);
     	
     	//create USB camera
-    	CameraServer camera;
+    	/*CameraServer camera;
     	camera = CameraServer.getInstance();
     	camera.setQuality(50);
-    	camera.startAutomaticCapture("cam0");
+    	camera.startAutomaticCapture("cam2");*/
     	
     	//create joystick
     	stick1 = new Joystick(0);
