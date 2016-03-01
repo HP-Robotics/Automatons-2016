@@ -105,8 +105,9 @@ public class Robot extends IterativeRobot {
 	double intakeSpeed = 0.0;
 	String intakeOn = "Off";
 	
-	ToggleSwitch intakeState;
-	ToggleSwitch intakeEnableState;
+	ToggleSwitch intakeInState;
+	ToggleSwitch intakeOutState;
+	ToggleSwitch intakeOffState;
 	
 	/*declare shooter-related objects and variables*/	
 	Talon shooter;
@@ -496,26 +497,26 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK set motor speeds
     public void setIntakeSpeed() {
     	//set intake using dpad
-    	 if(intakeState.updateState(stick1.getPOV() >= 135 && stick1.getPOV()<= 225)) {
-    		if(intakeState.switchEnabled()) {
+    	 if(intakeInState.updateState(stick1.getPOV() >= 135 && stick1.getPOV()<= 225)) {
     			intakeSpeed = -1.0;
     			intakeOn = "In";
     			
-    		} else {
-    			intakeSpeed = 1.0;
-        		intakeOn = "Out";
-    		}
     	}
     	
-    	if(intakeEnableState.updateState(stick1.getPOV() >= 0 && stick1.getPOV() <= 45) || (stick1.getPOV()>=315)) {
-    		turnIntakeOff();	
+    	if(intakeOutState.updateState(stick1.getPOV() >= 0 && stick1.getPOV() <= 45) || (stick1.getPOV()>=315)) {
+
+    		intakeSpeed = 1.0;
+    		intakeOn = "Out";
+    	}
+    	
+    	if(intakeOffState.updateState(stick1.getPOV() == 90 || stick1.getPOV() == 270)) {
+    		turnIntakeOff();
     	}
     }
     
     public void turnIntakeOff(){
 		intakeSpeed = 0.0;
 		intakeOn = "Off";
-		intakeState.reset();
     }
     
     public void setShooterSpeed() {
@@ -741,7 +742,7 @@ public class Robot extends IterativeRobot {
     		return;
     	}
     	
-    	if (stick1.getRawButton(LTRIGGER)){
+    	if (stick1.getRawButton(LBUMPER)){
     		goNoDrifting(0.7, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.5, 0.5);
     		if(!gyroDrive){
     			gyroReset();
@@ -751,7 +752,7 @@ public class Robot extends IterativeRobot {
     		}
     		
     	} 
-    	else if(stick1.getRawButton(LBUMPER)){
+    	else if(stick1.getRawButton(LTRIGGER)){
     		goNoDrifting(-0.7, gyro.getAngle() * SmartDashboard.getNumber("k_angle"), -0.5, 0.5);
     		if(!gyroDrive){
     			gyroReset();
@@ -759,28 +760,7 @@ public class Robot extends IterativeRobot {
     			tankDriveEnabled = false;
     			slowDriveEnabled = false;
     		}
-    	}else if(stick1.getPOV() == 90) {
-    		if(!gyroDrive){
-    			gyroReset();
-    			turnControl.setSetpoint(90);
-    			//turnControl.enableLog("TurnPID.csv");
-    			turnControl.enable();
-    			
-    			gyroDrive = true;
-    			tankDriveEnabled = false;
-    			slowDriveEnabled = false;
-    		}
-    	} else if(stick1.getPOV() == 270) {
-    		if(!gyroDrive){
-    			gyroReset();
-    			turnControl.setSetpoint(-90);
-    			//turnControl.enableLog("TurnPID.csv");
-    			turnControl.enable();
-    			
-    			gyroDrive = true;
-    			tankDriveEnabled = false;
-    			slowDriveEnabled = false;
-    		}
+    		
     	} else if(gyroDrive) {
     		gyroDrive = false;
     		
@@ -788,6 +768,9 @@ public class Robot extends IterativeRobot {
     		//turnControl.closeLog();
     		turnControl.reset();
     	}
+    	
+    	
+
     }
     
     //QUICKCLICK getHttpData
@@ -851,8 +834,9 @@ public class Robot extends IterativeRobot {
     public void createIntakeObjects() {
     	intake = new Talon(4);
     	
-    	intakeState = new ToggleSwitch();
-    	intakeEnableState = new ToggleSwitch();
+    	intakeInState = new ToggleSwitch();
+    	intakeOutState = new ToggleSwitch();
+    	intakeOffState = new ToggleSwitch();
     	
     }
     
