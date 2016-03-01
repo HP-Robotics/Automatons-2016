@@ -283,7 +283,7 @@ public class Robot extends IterativeRobot {
     	
     	//run the trigger only if the shooter wheel is at speed
     	if((stick1.getRawButton(BBUTTON) || stick2.getRawButton(BBUTTON)) 
-    			&& (true || (shooterIsAtSpeed() && armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)))) {
+    			&& (true || (shooterIsAtSpeed(250) && armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)))) {
     		//FIXME restore this before competition!
     		//FIXME
     		//FIXME !!!!!!!!!!!!!!!!!!
@@ -482,11 +482,11 @@ public class Robot extends IterativeRobot {
 			
 	}
     
-    public boolean shooterIsAtSpeed() {
+    public boolean shooterIsAtSpeed(double threshold) {
     	double actualSpeed = Math.abs(shooterCounter.getRateInRPMs());
     	double targetSpeed = Math.abs(SmartDashboard.getNumber("TargetShooterSpeed"));
     	
-    	if(Math.abs(targetSpeed - actualSpeed) < 250) {
+    	if(Math.abs(targetSpeed - actualSpeed) < threshold) {
     		return true;
     	}
     	
@@ -924,7 +924,7 @@ public class Robot extends IterativeRobot {
 		autoChooser.addObject("Empty: Do Nothing", new EmptyAuto(this));
 		autoChooser.addObject("Drive Back", new MoveBackAuto(this));
 		autoChooser.addObject("Cross Defense", new CrossDefenseAuto(this));
-		autoChooser.addObject("Cross Low Bar and Shoot", new CrossAndShootAuto(this));
+		autoChooser.addObject("Cross Low Bar and Shoot", new LowBarAndShootAuto(this));
 		autoChooser.addDefault("Calibrate", new CalibrateAuto(this));
 		
     	SmartDashboard.putData("Autonomous Mode", autoChooser);

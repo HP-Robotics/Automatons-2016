@@ -2,16 +2,15 @@ package org.usfirst.frc.team2823.robot;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-public class CrossAndShootAuto extends AutoMode {
+public class LowBarAndShootAuto extends AutoMode {
 	
-	public CrossAndShootAuto(Robot myBot) {
+	public LowBarAndShootAuto(Robot myBot) {
 		super(myBot);
 	}
 
 	@Override
 	public void autoInit() {
-		//FIXME disable PID controllers!!!
-		double[] timeouts = {1.0, 15.0, 4.0, 3.0, 2.0, 2.0, 1.0, 1.0};
+		double[] timeouts = {1.0, 15.0, 10.0, 3.0, 2.0, 2.0, 1.0, 1.0};
 		setStageTimeouts(timeouts);
 		robot.gyroReset();
 		startAuto();
@@ -27,7 +26,7 @@ public class CrossAndShootAuto extends AutoMode {
 			spinUpShooter();
 			break;
 		case 1:
-			lowerArmBasedOnDefense();
+			lowerArm();
 			break;
 		case 2:
 			driveOverDefense();
@@ -62,27 +61,22 @@ public class CrossAndShootAuto extends AutoMode {
 		}
 	}
 	
-	public void lowerArmBasedOnDefense() {
+	public void lowerArm() {
 		
 		//run entry code
 		if(!stageData[stage].entered) {
 			
 			robot.armControl.enable();
 			
-			//determine setpoint based on SmartDashboard input
-			if(!SmartDashboard.getBoolean("Lowbar?")) {
-				robot.armControl.setSetpoint(Robot.MIDSETPOINT);
-				robot.currentSetpoint = 2;
-			} else {
-				robot.armControl.setSetpoint(Robot.LOWTRAVELSETPOINT);
-				robot.currentSetpoint = 3;
-			}
+			robot.armControl.setSetpoint(Robot.LOWTRAVELSETPOINT);
+			robot.currentSetpoint = 3;
 			
 			stageData[stage].entered = true;
 		}
 		
+		//FIXME remove this true or the robot will crash into something!!
 		//move on to the next stage when the arm is within 100 encoder ticks
-		if(Math.abs(robot.armEncoder.get() - robot.armControl.getSetpoint()) < 100) {
+		if(true || (Math.abs(robot.armEncoder.get() - robot.armControl.getSetpoint()) < 100)) {
 			nextStage();
 		}
 		
@@ -92,16 +86,19 @@ public class CrossAndShootAuto extends AutoMode {
 		//run entry code
 		if(!stageData[stage].entered) {
 			
-			//drive with gyro PID to 50 inches
+			robot.lDriveEncoder.reset();
+			robot.rDriveEncoder.reset();
+			
+			//drive with gyro motion plan most of the way to the wall
 			robot.gyroDriveControl.enableLog("autoGyroDrivePID.csv");
+			robot.gyroDriveControl.configureGoal(275, Robot.MAXVELOCITY/2, Robot.MAXACCELERATION/4);
 			robot.gyroDriveControl.enable();
-			robot.gyroDriveControl.setSetpoint(50);
 			
 			stageData[stage].entered = true;
 		}
 		
 		//move on to the next stage when the average of the drive encoders (in inches) is within 1 inch of the setpoint
-		if(Math.abs((Robot.driveEncoderToInches(robot.lDriveEncoder.get() + robot.rDriveEncoder.get()) / 2) - robot.gyroDriveControl.getSetpoint()) < 1) {
+		if(robot.gyroDriveControl.isPlanFinished()) {
 			nextStage();
 		}
 	}
@@ -109,25 +106,14 @@ public class CrossAndShootAuto extends AutoMode {
 	public void driveToWall() {
 		//run entry code
 		if(!stageData[stage].entered) {
-			
-			//FIXME Remember to restore gyro values in teleop!!!
-			//reset drive encoders
-			robot.lDriveEncoder.reset();
-			robot.rDriveEncoder.reset();
-			
-			//drive with gyro PID to 50 inches
-			robot.gyroDriveControl.enableLog("autoGyroDrivePID.csv");
-			robot.gyroDriveControl.setOutputRange(-0.2, 0.2);
-			robot.gyroDriveControl.enable();
-			robot.gyroDriveControl.setSetpoint(20);
+			//disable motion control
+			robot.gyroDriveControl.disable();
 			
 			stageData[stage].entered = true;
 		}
 		
-		//move on to the next stage when the average of the drive encoders (in inches) is within 1 inch of the setpoint
-		if(Math.abs((Robot.driveEncoderToInches(robot.lDriveEncoder.get() + robot.rDriveEncoder.get()) / 2) - robot.gyroDriveControl.getSetpoint()) < 1) {
-			nextStage();
-		}
+		//drive the rest of the way to the wall (relying on timeout to stop driving)
+		robot.goNoDrifting(0.2, -robot.gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.1, 0.5);
 	}
 	
 	public void raiseArm() {
@@ -138,6 +124,9 @@ public class CrossAndShootAuto extends AutoMode {
 			robot.armControl.enable();
 			robot.armControl.setSetpoint(Robot.SHOOTSETPOINT);
 			robot.currentSetpoint = 0;
+			
+			//keep driving the robot to keep it steady while shooting
+			robot.driveRobot(0.1, 0.1);
 			
 			stageData[stage].entered = true;
 		}
@@ -152,7 +141,7 @@ public class CrossAndShootAuto extends AutoMode {
 	public void waitForFlywheelToSpinUp() {
 		
 		//move on to the next stage when the flywheel is up to speed
-		if(robot.shooterIsAtSpeed()) {
+		if(robot.shooterIsAtSpeed(150)) {
 			nextStage();
 		}
 	}
@@ -174,6 +163,9 @@ public void turnOffTrigger() {
 		//run entry code
 		if(!stageData[stage].entered) {
 			robot.trigger.setAngle(Robot.TRIGGEROFFPOSITION);
+			
+			//end continual drive
+			robot.driveRobot(0.0, 0.0);
 			
 			stageData[stage].entered = true;
 		}

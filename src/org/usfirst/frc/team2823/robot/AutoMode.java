@@ -73,5 +73,7 @@ public class AutoMode {
 	
 	public void endAuto() {
 		robot.driveRobot(0.0, 0.0);
+		
+		robot.gyroDriveControl.disable();
 	}
 }

@@ -94,6 +94,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   
   private MotionWayPoint m_currentWaypoint;
   private boolean m_motionPlanEnabled = false;
+  private boolean m_planFinished = false;
   private double  m_maxVelocity;
   private double  m_maxAcceleration;
   private double  m_timeUntilMaxVelocity;
@@ -101,6 +102,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   private double  m_positionAtMaxVelocity;
   private double  m_positionAtEndOfCruise;
   private double  m_timeAtEndOfCruise;
+ 
   
   /**
    * Subclass that defines one set of predefined values (a waypoint) for motion control.
@@ -313,6 +315,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   //QUICKCLICK motion planning methods
   public void configureGoal(double goal, double max_v, double max_a) {
 	  m_motionPlanEnabled = true;
+	  m_planFinished = false;
 	  
       double midpoint = goal / 2;
       
@@ -391,6 +394,10 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 	  m_kV = kV;
   }
   
+  public boolean isPlanFinished() {
+	  return m_planFinished;
+  }
+  
   public void printGoalDetails() {
       System.out.println("m_maxVelocity:" + m_maxVelocity);
       System.out.println("m_maxAcceleration:" + m_maxAcceleration);
@@ -450,6 +457,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     	  if(m_currentWaypoint == null) {
     		  synchronized(this) {
         		  m_pidOutput.pidWrite(0.0);
+        		  m_planFinished = true;
         	  }
         	  return;
     	  }
