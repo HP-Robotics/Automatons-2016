@@ -151,6 +151,11 @@ public class Robot extends IterativeRobot {
 	/*declare test mode-related objects*/
 	TestMode testMode;
 	
+	/*declare Raspberry Pi communications-related objects*/
+	PiThread pi;
+	
+	boolean piIsStarted = false;
+	
 	/*declare joystick and button press-related objects*/
 	Joystick stick1;
 	Joystick stick2;
@@ -234,6 +239,14 @@ public class Robot extends IterativeRobot {
     }
     
     public void autonomousInit() {
+    	//try to connect to Pi
+    	if(!piIsStarted) {
+    		pi = new PiThread();
+    		pi.start();
+    		
+    		piIsStarted = true;
+    	}
+    	
     	//reset arm encoder and set PID target to 0 (keeps the arm upright)
     	armEncoder.reset();
     	
@@ -252,6 +265,14 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK teleopInit
     public void teleopInit() {
     	LiveWindow.setEnabled(false);
+    	
+    	//try to connect to Pi
+    	if(!piIsStarted) {
+    		pi = new PiThread();
+    		pi.start();
+    		
+    		piIsStarted = true;
+    	}
     	
     	//disable shooter, intake and arm motors
     	shooterSpeed = 0.0;
