@@ -13,14 +13,13 @@ public class TalkToPi {
 		try {
 			value = new TalkToPi();
 		} catch (IOException e) {
-			System.err.println("Unable to connect to PI");
-			e.printStackTrace();
+			System.err.println("Unable to find address of PI");
 		}
 		singleton = value;
 	}
 
 	private final InetAddress pi;
-	private final DatagramSocket serverSocket;
+	private static DatagramSocket serverSocket;
 
 	private TalkToPi() throws IOException {
 		pi = InetAddress.getByName("raspberrypi.local");
@@ -46,4 +45,15 @@ public class TalkToPi {
 				sendData.length, pi, 5201);
 		serverSocket.send(sendPacket);
 	}
+
+	public static String recv() throws IOException {
+        byte[] receiveData = new byte[1024];
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        serverSocket.receive(receivePacket);
+        return new String(receivePacket.getData());
+    }
+
+    public static void close() {
+        serverSocket.close();
+    }
 }
