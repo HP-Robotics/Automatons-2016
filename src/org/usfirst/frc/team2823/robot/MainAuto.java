@@ -117,9 +117,8 @@ public class MainAuto extends AutoMode {
 			stageData[m_stage].entered = true;
 		}
 		
-		//FIXME remove this true or the robot will crash into something!!
 		//move on to the next stage when the arm is within 100 encoder ticks
-		if(true || (Math.abs(robot.armEncoder.get() - robot.armControl.getSetpoint()) < 100)) {
+		if(Math.abs(robot.armEncoder.get() - robot.armControl.getSetpoint()) < 100) {
 			nextStage();
 		}
 		

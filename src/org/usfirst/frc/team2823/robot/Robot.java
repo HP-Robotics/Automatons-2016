@@ -375,13 +375,12 @@ public class Robot extends IterativeRobot {
     		manualArmEnabled = false;
     	}*/
     	
-    	//FIXME remove true and false before competition!!!!!!!!
     	if (!gyroDrive && !motionDriveEnabled) {
-    		if(false && armEncoder.get() < (MIDSETPOINT - OFFSET) && tankDriveEnabled) {
+    		if(armEncoder.get() < (MIDSETPOINT - OFFSET) && tankDriveEnabled) {
     			tankDriveEnabled = false;
     			slowDriveEnabled = true;
     			
-    		} else if(true || (armEncoder.get() > (MIDSETPOINT - OFFSET) && !tankDriveEnabled)) {
+    		} else if(armEncoder.get() > (MIDSETPOINT - OFFSET) && !tankDriveEnabled) {
     			tankDriveEnabled = true;
     			slowDriveEnabled = false;
     		}
@@ -728,8 +727,7 @@ public class Robot extends IterativeRobot {
     	
     }
     public void goGyro (){
-    	//FIXME remove false before competition!!!!!!!!!!!!!!!!!!11!11!1!11!!
-    	if(false && armEncoder.get() < (MIDSETPOINT - OFFSET)) {
+    	if(armEncoder.get() < (MIDSETPOINT - OFFSET)) {
     		if (gyroDrive) {
     			turnControl.disable();
     			//turnControl.closeLog();
