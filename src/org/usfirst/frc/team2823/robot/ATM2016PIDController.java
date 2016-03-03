@@ -795,6 +795,10 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 	  
   }
   
+  public double getSetpointInRPMs() {
+	  return getSetpoint() * (60.0/2048.0);
+  }
+  
   /**
    * Returns the current setpoint of the PIDController
    *$

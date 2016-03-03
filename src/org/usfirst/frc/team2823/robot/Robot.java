@@ -27,12 +27,14 @@ public class Robot extends IterativeRobot {
 	
 	//QUICKCLICK declarations
 	
-	/*declare ~magic~ numbers*/
-	static final int SHOOTSETPOINT = 0;
-	static final int HIGHTRAVELSETPOINT = 600;
-	static final int MIDSETPOINT = 1800;
-	static final int LOWTRAVELSETPOINT = 2280;
-	static final int INTAKESETPOINT = 2400;
+	/*declare constants*/
+	static final int CALIBRATIONOFFSET = 40;
+	
+	static final int SHOOTSETPOINT = (0 + CALIBRATIONOFFSET);
+	static final int HIGHTRAVELSETPOINT = (600 + CALIBRATIONOFFSET);
+	static final int MIDSETPOINT = (1800 + CALIBRATIONOFFSET);
+	static final int LOWTRAVELSETPOINT = (2280 + CALIBRATIONOFFSET);
+	static final int INTAKESETPOINT = (2400 + CALIBRATIONOFFSET);
 	static final int OFFSET = 100;
 	
 	static final double FARSPEED = 3300.0;
@@ -116,7 +118,9 @@ public class Robot extends IterativeRobot {
 	ATM2016PIDController shooterSpeedControl;
 	
 	ToggleSwitch RPMState;
+	ToggleSwitch visionShootState;
 	
+	boolean shootingWithVision = false;
 	double shooterSpeed = 0.0;
 	int currentTargetRPM = 1;
 	double[] shooterTargetRPMs = {FARSPEED, MIDSPEED, CLOSESPEED};
@@ -228,10 +232,10 @@ public class Robot extends IterativeRobot {
     	testMode = new TestMode(this);
     	
     	//create USB camera
-    	/*CameraServer camera;
+    	CameraServer camera;
     	camera = CameraServer.getInstance();
     	camera.setQuality(50);
-    	camera.startAutomaticCapture("cam2");*/
+    	camera.startAutomaticCapture("cam0");
     	
     	//create joystick
     	stick1 = new Joystick(0);
@@ -317,6 +321,25 @@ public class Robot extends IterativeRobot {
     	else {
     		trigger.setAngle(TRIGGEROFFPOSITION);
     		firingInProgress = false;
+    	}
+    	
+    	//run the *magic* button code to read data from the Pi, drive to correct distance, spin up shooter to correct RPM, then fire
+    	if((stick1.getRawButton(ABUTTON) || stick2.getRawButton(ABUTTON))) {
+    		if(!shootingWithVision) {
+    			shootingWithVision = true;
+    			
+    			//get data from Pi
+    			String piData = pi.getLast();
+    			
+    			//continue if the goal is OK to shoot at
+    			if(piData.contains("GOOD")) {
+    				//do something
+    			}
+    		}
+    		
+    	} else {
+    		//stop the *magic* shooting if the button is released
+    		shootingWithVision = false;
     	}
     	
     	//Y button
@@ -502,7 +525,7 @@ public class Robot extends IterativeRobot {
     
     public boolean shooterIsAtSpeed(double threshold) {
     	double actualSpeed = Math.abs(shooterCounter.getRateInRPMs());
-    	double targetSpeed = Math.abs(shooterSpeedControl.getSetpoint());
+    	double targetSpeed = Math.abs(shooterSpeedControl.getSetpointInRPMs());
     	
     	if(Math.abs(targetSpeed - actualSpeed) < threshold) {
     		return true;
@@ -871,6 +894,7 @@ public class Robot extends IterativeRobot {
     	
     	pidState = new ToggleSwitch();
     	RPMState = new ToggleSwitch();
+    	visionShootState = new ToggleSwitch();
     }
     
     //create objects to run the arm system
