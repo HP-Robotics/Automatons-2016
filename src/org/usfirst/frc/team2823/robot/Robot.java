@@ -143,7 +143,7 @@ public class Robot extends IterativeRobot {
 	/*declare trigger-related objects and variables*/
 	Servo trigger;
 	
-	boolean watchSent = false;
+	boolean firingInProgress = false;
 	
 	/*declare auto-related objects*/
 	SendableChooser autoChooser;
@@ -282,23 +282,20 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK teleopPeriodic
     public void teleopPeriodic() {
     	
-    	//run the trigger only if the shooter wheel is at speed
+    	//run the trigger only if the shooter wheel is at speed (or the B button is still held down from a previous run)
     	if((stick1.getRawButton(BBUTTON) || stick2.getRawButton(BBUTTON)) 
-    			&& (true || (shooterIsAtSpeed(250) && armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)))) {
-    		//FIXME restore this before competition!
-    		//FIXME
-    		//FIXME !!!!!!!!!!!!!!!!!!
+    			&& (firingInProgress || (shooterIsAtSpeed(100) && armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)))) {
     		
     		trigger.setAngle(TRIGGERONPOSITION);
-    		if(!watchSent){
+    		if(!firingInProgress){
     			TalkToPi.rawCommand("WATCH");
-    			watchSent = true;
+    			firingInProgress = true;
     		}
     		
     	}
     	else {
     		trigger.setAngle(TRIGGEROFFPOSITION);
-    		watchSent = false;
+    		firingInProgress = false;
     	}
     	
     	//Y button
