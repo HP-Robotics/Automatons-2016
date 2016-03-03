@@ -22,7 +22,8 @@ public class TalkToPi {
 	private static DatagramSocket serverSocket;
 
 	private TalkToPi() throws IOException {
-		pi = InetAddress.getByName("raspberrypi.local");
+		//pi = InetAddress.getByName("raspberrypi.local");
+		pi = InetAddress.getByName("10.28.23.12");
 		serverSocket = new DatagramSocket(9876);
 	}
 

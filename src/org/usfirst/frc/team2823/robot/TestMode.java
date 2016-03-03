@@ -65,8 +65,12 @@ public class TestMode {
     	
 		if(robot.stick1.getRawButton(Robot.BBUTTON)){
 			if(!testPIDEnabled) {
+				robot.lDriveEncoder.reset();
+				robot.rDriveEncoder.reset();
+				
 				robot.motionDriveControl.enableLog("motionControlPID.csv");
-				robot.motionDriveControl.setSetpoint(12);
+				robot.motionDriveControl.setSetpoint(100);
+				robot.motionDriveControl.setOutputRange(-0.5, 0.5);
 				robot.motionDriveControl.enable();
 				System.out.println("Start PID");
 

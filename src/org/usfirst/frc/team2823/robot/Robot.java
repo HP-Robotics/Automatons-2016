@@ -295,6 +295,10 @@ public class Robot extends IterativeRobot {
     	arm.enableBrakeMode(false);
     	arm.enable();
     	
+    	//lock arm to current setpoint
+    	armControl.enable();
+    	
+    	
     	//reset gyro
     	gyroReset();
     	
@@ -323,6 +327,7 @@ public class Robot extends IterativeRobot {
     		firingInProgress = false;
     	}
     	
+    	/*
     	//run the *magic* button code to read data from the Pi, drive to correct distance, spin up shooter to correct RPM, then fire
     	if((stick1.getRawButton(ABUTTON) || stick2.getRawButton(ABUTTON))) {
     		if(!shootingWithVision) {
@@ -341,6 +346,7 @@ public class Robot extends IterativeRobot {
     		//stop the *magic* shooting if the button is released
     		shootingWithVision = false;
     	}
+    	*/
     	
     	//Y button
     	/*if(stick.getRawButton(y)) {
@@ -537,31 +543,31 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK set motor speeds
     public void setIntakeSpeed() {
     	//set intake using dpad
-    	 if(intakeInState.updateState(stick1.getPOV() >= 135 && stick1.getPOV()<= 225)) {
+    	 if(intakeInState.updateState((stick1.getPOV() >= 135 && stick1.getPOV()<= 225) || (stick2.getPOV() >= 135 && stick2.getPOV()<= 225))) {
     			intakeSpeed = -1.0;
     			intakeOn = "In";
     			
     	}
     	
-    	if(intakeOutState.updateState(stick1.getPOV() >= 0 && stick1.getPOV() <= 45) || (stick1.getPOV()>=315)) {
+    	if(intakeOutState.updateState((stick1.getPOV() >= 0 && stick1.getPOV() <= 45 || stick1.getPOV()>=315) || (stick2.getPOV() >= 0 && stick2.getPOV() <= 45 || stick2.getPOV()>=315))) {
 
     		intakeSpeed = 1.0;
     		intakeOn = "Out";
     	}
     	
-    	if(intakeOffState.updateState(stick1.getPOV() == 90 || stick1.getPOV() == 270)) {
+    	if(intakeOffState.updateState((stick1.getPOV() == 90 || stick1.getPOV() == 270) || (stick2.getPOV() == 90 || stick2.getPOV() == 270))) {
     		turnIntakeOff();
     	}
     }
     
-    public void turnIntakeOff(){
+    public void turnIntakeOff() {
 		intakeSpeed = 0.0;
 		intakeOn = "Off";
     }
     
     public void setShooterSpeed() {
     	//if the X button is pressed, use PID to drive shooter wheel
-    	if(pidState.updateState(stick1.getRawButton(XBUTTON))) {
+    	if(pidState.updateState(stick1.getRawButton(XBUTTON) || stick2.getRawButton(XBUTTON))) {
     		System.out.println("Updated button");
     		if(pidState.switchEnabled()) {
     			System.out.println("Shooter PID should be on");
@@ -861,11 +867,14 @@ public class Robot extends IterativeRobot {
     	rDrive2 = new VictorSP(1);
     	
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
-    	gyroDriveControl = new ATM2016PIDController  (0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput(), 0.01);
-    	motionDriveControl = new ATM2016PIDController(0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.01);
+    	//gyroDriveControl = new ATM2016PIDController  (0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput(), 0.01);
+    	//motionDriveControl = new ATM2016PIDController(0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.01);
+    	gyroDriveControl = new ATM2016PIDController  (0.07, 0.00015, 0.2, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput(), 0.01);
+    	motionDriveControl = new ATM2016PIDController(0.07, 0.00025, 0.2, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.01);
+    	
 
-    	//motionDriveControl.setKaKv(0.0027, 0.0079);
-    	motionDriveControl.setKaKv(0.002, 0.01087);
+    	motionDriveControl.setKaKv(0.0027, 0.0079);
+    	//motionDriveControl.setKaKv(0.002, 0.01087);
     	gyroDriveControl.setKaKv(0.002, 0.01087);
     }
     
