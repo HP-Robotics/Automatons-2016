@@ -37,7 +37,7 @@ public class Robot extends IterativeRobot {
 	static final int INTAKESETPOINT = (2400 + CALIBRATIONOFFSET);
 	static final int OFFSET = 100;
 	
-	static final double FARSPEED = 3300.0;
+	static final double FARSPEED = 3400.0;
 	static final double MIDSPEED = 3200.0;
 	static final double CLOSESPEED = 3900.0;
 	
@@ -476,6 +476,7 @@ public class Robot extends IterativeRobot {
     	 * TgtShtrSpeed: 3300 far away (3 robot widths)
     	 */
     	SmartDashboard.putString("ShooterTargetRPM", shooterTargetRPMs[currentTargetRPM] + "( " + shooterTargetNames[currentTargetRPM] + " )");
+    	SmartDashboard.putString("Arm Setpoint", setpointNames[currentSetpoint] + "( " + setpoints[currentSetpoint]+ " )");
     	SmartDashboard.putNumber("Speed", shooterSpeed);
     	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
     	SmartDashboard.putNumber("rDrive", rDrive1.getSpeed());
