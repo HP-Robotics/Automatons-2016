@@ -39,7 +39,7 @@ public class Robot extends IterativeRobot {
 	
 	static final double FARSPEED = 3400.0;
 	static final double MIDSPEED = 3200.0;
-	static final double CLOSESPEED = 3900.0;
+	static final double CLOSESPEED = 3425.0;
 	
 	static final int TRIGGEROFFPOSITION = 110;
 	static final int TRIGGERONPOSITION = 80;
@@ -426,11 +426,11 @@ public class Robot extends IterativeRobot {
     	}*/
     	
     	if (!gyroDrive && !motionDriveEnabled) {
-    		if(armEncoder.get() < (MIDSETPOINT - OFFSET) && tankDriveEnabled) {
+    		if(armEncoder.get() < (MIDSETPOINT - OFFSET)) {
     			tankDriveEnabled = false;
     			slowDriveEnabled = true;
     			
-    		} else if(armEncoder.get() > (MIDSETPOINT - OFFSET) && !tankDriveEnabled) {
+    		} else if(armEncoder.get() > (MIDSETPOINT - OFFSET)) {
     			tankDriveEnabled = true;
     			slowDriveEnabled = false;
     		}
