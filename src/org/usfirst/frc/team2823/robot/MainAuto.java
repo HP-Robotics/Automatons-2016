@@ -91,7 +91,7 @@ public class MainAuto extends AutoMode {
 			
 			//spin shooter up to speed depending on defense
 			if(m_defense == 1) {
-				robot.shooterSpeedControl.setSetpointInRPMs(Robot.FARSPEED - 100);
+				robot.shooterSpeedControl.setSetpointInRPMs(Robot.FARSPEED);
 			} else {
 				robot.shooterSpeedControl.setSetpointInRPMs(Robot.CLOSESPEED);
 			}

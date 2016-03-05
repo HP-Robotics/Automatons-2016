@@ -17,6 +17,8 @@ public class TestMode {
 		robot.lDriveEncoder.reset();
 		robot.rDriveEncoder.reset();
 		
+		robot.trigger.setAngle(SmartDashboard.getNumber("Servo Angle"));
+		
 		//robot.armControl.setSetpoint(Robot.HIGHTRAVELSETPOINT);
 		//robot.armControl.enable();
 		
@@ -40,6 +42,12 @@ public class TestMode {
 			robot.gyroDriveControl.disable();
 			robot.gyroDriveControl.closeLog();
 		}*/
+		
+		if(robot.stick1.getRawButton(Robot.YBUTTON)) {
+			robot.trigger.setAngle(SmartDashboard.getNumber("Servo Angle"));
+			System.out.println("Angle: " + robot.trigger.getAngle());
+			System.out.println("Setting angle to " + SmartDashboard.getNumber("Servo Angle"));
+		}
 		
 		if(robot.stick1.getRawButton(Robot.ABUTTON)) {
 			if (!robot.motionDriveEnabled) {

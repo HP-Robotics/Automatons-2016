@@ -37,12 +37,12 @@ public class Robot extends IterativeRobot {
 	static final int INTAKESETPOINT = (2400 + CALIBRATIONOFFSET);
 	static final int OFFSET = 100;
 	
-	static final double FARSPEED = 3400.0;
+	static final double FARSPEED = 3300.0;
 	static final double MIDSPEED = 3200.0;
 	static final double CLOSESPEED = 3425.0;
 	
-	static final int TRIGGEROFFPOSITION = 110;
-	static final int TRIGGERONPOSITION = 80;
+	static final int TRIGGEROFFPOSITION = 95;
+	static final int TRIGGERONPOSITION = 65;
 	
 	static final int XBUTTON = 1;
 	static final int ABUTTON = 2;
@@ -575,6 +575,7 @@ public class Robot extends IterativeRobot {
     			shooterSpeedControl.enableLog("ShootPID.csv");
     			shooterSpeedControl.enable();
     			shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
+    			//shooterSpeedControl.setSetpointInRPMs(SmartDashboard.getNumber("TargetShooterSpeed"));
     			
     			//tankDriveEnabled = false;
     			
@@ -942,6 +943,8 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Arm Target", 0);
     	SmartDashboard.putNumber("Motion Plan Target", 0.0);
     	SmartDashboard.putNumber("TestDrive Power", 0.0);
+    	SmartDashboard.putNumber("TargetShooterSpeed", 0.0);
+    	//SmartDashboard.putNumber("Servo Angle", TRIGGEROFFPOSITION);
     	SmartDashboard.putBoolean("Shoot in Auto?", true);
     		
     }
