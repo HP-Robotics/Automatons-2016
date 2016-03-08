@@ -142,7 +142,13 @@ public class MainAuto extends AutoMode {
 				target = 275;
 			}
 			
-			robot.gyroDriveControl.configureGoal(target, Robot.MAXVELOCITY/2, Robot.MAXACCELERATION/4);
+			//try to drive faster over non-lowbar defenses
+			if(m_defense > 1) {
+				robot.gyroDriveControl.configureGoal(target, Robot.MAXVELOCITY/1.5, Robot.MAXACCELERATION/3);
+			} else {
+				robot.gyroDriveControl.configureGoal(target, Robot.MAXVELOCITY/2, Robot.MAXACCELERATION/4);
+			}
+			
 			robot.gyroDriveControl.enable();
 			
 			stageData[m_stage].entered = true;

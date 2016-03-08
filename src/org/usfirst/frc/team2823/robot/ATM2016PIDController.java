@@ -288,9 +288,9 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   
   //QUICKCLICK safeArm
   private double safeArm(double output){
-	  if(robot.upperLimitSwitch.get() && robot.armControl.getSetpoint() < 200) {
-			return 0.0;
-		}
+	  /*if(robot.upperLimitSwitch.get() && robot.armControl.getSetpoint() < 200) {
+		  return 0.0;
+	  }*/
 		
 		if(robot.armEncoder.get() < Robot.MIDSETPOINT && output > OUTPUT_CLAMP_DOWN) {
 			return OUTPUT_CLAMP_DOWN;
