@@ -313,21 +313,7 @@ public class Robot extends IterativeRobot {
     //QUICKCLICK teleopPeriodic
     public void teleopPeriodic() {
     	
-    	//run the trigger only if the shooter wheel is at speed (or the B button is still held down from a previous run)
-    	if((stick1.getRawButton(BBUTTON) || stick2.getRawButton(BBUTTON)) 
-    			&& (firingInProgress || (shooterIsAtSpeed(100) && armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)))) {
-    		
-    		trigger.setAngle(TRIGGERONPOSITION);
-    		if(!firingInProgress){
-    			TalkToPi.rawCommand("WATCH");
-    			firingInProgress = true;
-    		}
-    		
-    	}
-    	else {
-    		trigger.setAngle(TRIGGEROFFPOSITION);
-    		firingInProgress = false;
-    	}
+    	runTrigger();
     	
     	/*
     	//run the *magic* button code to read data from the Pi, drive to correct distance, spin up shooter to correct RPM, then fire
@@ -349,61 +335,6 @@ public class Robot extends IterativeRobot {
     		shootingWithVision = false;
     	}
     	*/
-    	
-    	//Y button
-    	/*if(stick.getRawButton(y)) {
-    		if(!drivePIDEnabled) {
-    			drivePIDEnabled = true;
-    			tankDriveEnabled = false;
-    			
-    			lDriveEncoder.reset();
-    			rDriveEncoder.reset();
-    			
-    			gyroDriveControl.enableLog("gyroDrivePID.csv");
-    			gyroDriveControl.setInitialPower(SmartDashboard.getNumber("GyroDrive Initial Power"), SmartDashboard.getNumber("GyroDrive Initial Time (ms)"));
-    			gyroDriveControl.enable();
-    			gyroDriveControl.setSetpoint(SmartDashboard.getNumber("Gyro Drive Target"));
-    		}
-    	} else {
-    		if(drivePIDEnabled) {
-    			drivePIDEnabled = false;
-    			tankDriveEnabled = true;
-    			
-    			gyroDriveControl.disable();
-    			gyroDriveControl.closeLog();
-    		}
-    	}*/
-    	
-    	/*
-    	//use Y button to enable/disable arm PID
-    	if(stick.getRawButton(y)) {
-    		if(manualArmEnabled) {
-    			//turn PID on and drive to setpoint
-    			System.out.println("Arm PID should be on");
-    			armControl.enableLog("armPID.csv");
-    			armControl.enable();
-    			armControl.setSetpoint(SmartDashboard.getNumber("Arm Target"));
-    			
-    			manualArmEnabled = false;
-    		}
-    	} else {
-    		if(!manualArmEnabled) {
-    			System.out.println("Arm PID should be off");
-    			armControl.disable();
-    			armControl.reset();
-    			armControl.closeLog();
-    			
-    			manualArmEnabled = true;
-    		}
-    	}*/
-    	
-    	/*if(stick.getRawButton(YBUTTON) && !manualArmEnabled) {
-    		disableArmPid();
-    		armControl.closeLog();
-    		
-    	} else if(manualArmEnabled) {
-    		manualArmEnabled = false;
-    	}*/
     	
     	if (!gyroDrive && !motionDriveEnabled) {
     		if(armEncoder.get() < (MIDSETPOINT - OFFSET)) {
@@ -623,6 +554,24 @@ public class Robot extends IterativeRobot {
     			armControl.setSetpoint(setpoints[currentSetpoint]);
     			enableArmPid();
     		}
+    	}
+    }
+    
+    public void runTrigger() {
+    	//run the trigger only if the shooter wheel is at speed (or the B button is still held down from a previous run)
+    	if((stick1.getRawButton(BBUTTON) || stick2.getRawButton(BBUTTON)) 
+    			&& (firingInProgress || (shooterIsAtSpeed(100) && armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)))) {
+    		
+    		trigger.setAngle(TRIGGERONPOSITION);
+    		if(!firingInProgress){
+    			TalkToPi.rawCommand("WATCH");
+    			firingInProgress = true;
+    		}
+    		
+    	}
+    	else {
+    		trigger.setAngle(TRIGGEROFFPOSITION);
+    		firingInProgress = false;
     	}
     }
     
