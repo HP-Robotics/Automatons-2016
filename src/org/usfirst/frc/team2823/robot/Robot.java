@@ -52,6 +52,7 @@ public class Robot extends IterativeRobot {
 	static final int RBUMPER = 6;
 	static final int LTRIGGER = 7;
 	static final int RTRIGGER = 8;
+	static final int STARTBUTTON = 10;
 	
 	static final int LEFTAXIS = 1;
 	static final int RIGHTAXIS = 3;
@@ -92,6 +93,7 @@ public class Robot extends IterativeRobot {
 	boolean motionDriveEnabled = false;
 	boolean tankDriveEnabled = true;
 	boolean slowDriveEnabled = false;
+	boolean emergencyMode = false;
 	
 	static final double ENCODER_RESOLUTION = 2048;
 	static final double FUDGE_FACTOR = (194.0/196.0);
@@ -100,6 +102,7 @@ public class Robot extends IterativeRobot {
 	static final double DRIVE_RATIO = (1.432 / 3.826);
 	
 	ToggleSwitch pidState;
+	ToggleSwitch emergencyState;
 	
 	/*declare intake-related objects and variables*/
 	Talon intake;
@@ -142,7 +145,6 @@ public class Robot extends IterativeRobot {
 	int currentSetpoint = 0;
 	int[] setpoints = {SHOOTSETPOINT, HIGHTRAVELSETPOINT, MIDSETPOINT, LOWTRAVELSETPOINT, INTAKESETPOINT};
 	String[] setpointNames = {"Shoot", "High Travel", "Mid", "Low Travel", "Intake"};
-	boolean manualArmEnabled = true;
 	
 	/*declare trigger-related objects and variables*/
 	Servo trigger;
@@ -394,28 +396,6 @@ public class Robot extends IterativeRobot {
     			manualArmEnabled = true;
     		}
     	}*/
-    	    	
-    	//raise arm to next setpoint, unless arm is at 90 (shoot setpoint)
-    	if(armUpState.updateState(stick1.getRawButton(RBUMPER)|| stick2.getRawButton(RBUMPER))) {
-    		if(currentSetpoint > 0) {
-    			currentSetpoint--;
-    			
-    			disableArmPid();
-    			armControl.setSetpoint(setpoints[currentSetpoint]);
-    			enableArmPid();
-    		}
-    	}
-    	
-    	//lower arm to next setpoint, unless arm is at intake setpoint
-    	if(armDownState.updateState(stick1.getRawButton(RTRIGGER)|| stick2.getRawButton(RTRIGGER))) {
-    		if(currentSetpoint < setpoints.length-1) {
-    			currentSetpoint++;
-    			
-    			disableArmPid();
-    			armControl.setSetpoint(setpoints[currentSetpoint]);
-    			enableArmPid();
-    		}
-    	}
     	
     	/*if(stick.getRawButton(YBUTTON) && !manualArmEnabled) {
     		disableArmPid();
@@ -436,16 +416,25 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
+    	if(emergencyState.updateState(stick1.getRawButton(STARTBUTTON) || stick2.getRawButton(STARTBUTTON))) {
+    		if(emergencyState.switchEnabled()) {
+    			emergencyMode = true;
+    			disableArmPid();
+    		} else {
+    			emergencyMode = false;
+    		}
+    	}
+    	
     	//calculate motor speeds
     	setIntakeSpeed();
     	setShooterSpeed();
     	
     	//if manual drive of the arm is allowed, set the arm speed
-    	if(manualArmEnabled) {
+    	if(emergencyMode) {
     		setArmSpeed();
         	arm.set(armSpeed);  
     	} else {
-    		
+    		setArmSetpoint();
     	}
     	
     	//calculate drive speeds
@@ -462,10 +451,14 @@ public class Robot extends IterativeRobot {
     	goGyro();
     	//QUICKCLICK tank drive
     	
-    	if(tankDriveEnabled) {
+    	if(tankDriveEnabled ) {
     		driveRobot(leftSpeed, rightSpeed);
     	} else if(slowDriveEnabled) {
-    		driveRobot(leftSpeed * 0.2, rightSpeed * 0.2);
+    		if(emergencyMode) {
+    			driveRobot(leftSpeed, rightSpeed);
+    		} else {
+    			driveRobot(leftSpeed * 0.2, rightSpeed * 0.2);
+    		}
     	}
     	
     	//send data to Smart Dashboard
@@ -598,7 +591,7 @@ public class Robot extends IterativeRobot {
     
     public void setArmSpeed() {
     	//set the arm speed using the left and right bumper
-    	if(stick1.getRawButton(RBUMPER) && !upperLimitSwitch.get()){
+    	if(stick1.getRawButton(RBUMPER)/* && !upperLimitSwitch.get()*/){
     		armSpeed = -SmartDashboard.getNumber("Arm Speed");
     	}
     	else if(stick1.getRawButton(RTRIGGER)/* && !lowerLimitSwitch.get()*/){
@@ -606,6 +599,30 @@ public class Robot extends IterativeRobot {
     	}
     	else {
     		armSpeed = 0.0;
+    	}
+    }
+    
+    public void setArmSetpoint() {
+    	//raise arm to next setpoint, unless arm is at 90 (shoot setpoint)
+    	if(armUpState.updateState(stick1.getRawButton(RBUMPER)|| stick2.getRawButton(RBUMPER))) {
+    		if(currentSetpoint > 0) {
+    			currentSetpoint--;
+    			
+    			disableArmPid();
+    			armControl.setSetpoint(setpoints[currentSetpoint]);
+    			enableArmPid();
+    		}
+    	}
+    	
+    	//lower arm to next setpoint, unless arm is at intake setpoint
+    	if(armDownState.updateState(stick1.getRawButton(RTRIGGER)|| stick2.getRawButton(RTRIGGER))) {
+    		if(currentSetpoint < setpoints.length-1) {
+    			currentSetpoint++;
+    			
+    			disableArmPid();
+    			armControl.setSetpoint(setpoints[currentSetpoint]);
+    			enableArmPid();
+    		}
     	}
     }
     
@@ -684,14 +701,12 @@ public class Robot extends IterativeRobot {
 	}
     
     public void enableArmPid() {
-		manualArmEnabled = false;
 		
 		armControl.enableLog("armPID.csv");
 		armControl.enable();
     }
     
     public void disableArmPid() {
-		manualArmEnabled = true;
 		
 		armControl.disable();
 		//armControl.closeLog();
