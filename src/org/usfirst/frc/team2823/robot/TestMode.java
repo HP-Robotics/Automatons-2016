@@ -17,7 +17,7 @@ public class TestMode {
 		robot.lDriveEncoder.reset();
 		robot.rDriveEncoder.reset();
 		
-		robot.trigger.setAngle(SmartDashboard.getNumber("Servo Angle"));
+		//robot.trigger.setAngle(SmartDashboard.getNumber("Servo Angle"));
 		
 		//robot.armControl.setSetpoint(Robot.HIGHTRAVELSETPOINT);
 		//robot.armControl.enable();
