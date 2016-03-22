@@ -177,6 +177,7 @@ public class Robot extends IterativeRobot {
 	
 	double cameraToGoalDistance = 0.0;
 	double cameraToLeftEdge = 0.0;
+	double lastPiMessage = 0.0;
 	
 	boolean piIsStarted = false;
 	
@@ -393,6 +394,9 @@ public class Robot extends IterativeRobot {
     			
     			//try to shoot if the arm is above the high travel setpoint and the shooter is at speed
     			trigger.setAngle(TRIGGERONPOSITION);
+    			
+    			TalkToPi.rawCommand("WATCH");
+    			lastPiMessage = Timer.getFPGATimestamp();
     		}
     		
     	} else {
@@ -525,6 +529,10 @@ public class Robot extends IterativeRobot {
     	//gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
     	motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	
+    	if((Timer.getFPGATimestamp()-lastPiMessage) > 1){
+    		TalkToPi.rawCommand("HELLO");
+    		lastPiMessage = Timer.getFPGATimestamp();
+    	}
     }
     
     //QUICKCLICK testMode
@@ -633,6 +641,7 @@ public class Robot extends IterativeRobot {
     		currentTargetRPM = (currentTargetRPM + 1) % shooterTargetRPMs.length;
     		shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
     		TalkToPi.rawCommand("RPM " + shooterTargetRPMs[currentTargetRPM]);
+    		lastPiMessage = Timer.getFPGATimestamp();
     	}
     }
     
@@ -681,6 +690,7 @@ public class Robot extends IterativeRobot {
     		trigger.setAngle(TRIGGERONPOSITION);
     		if(!firingInProgress){
     			TalkToPi.rawCommand("WATCH");
+    			lastPiMessage = Timer.getFPGATimestamp();
     			firingInProgress = true;
     		}
     		
