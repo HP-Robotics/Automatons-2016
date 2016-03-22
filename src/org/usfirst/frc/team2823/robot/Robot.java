@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.SPI.Port;
 import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.CANTalon;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.Encoder;
@@ -22,6 +23,7 @@ import edu.wpi.first.wpilibj.DigitalInput;
 
 import java.io.*;
 import java.net.*;
+import java.sql.Time;
 
 public class Robot extends IterativeRobot {
 	
@@ -157,6 +159,13 @@ public class Robot extends IterativeRobot {
 	
 	boolean firingInProgress = false;
 	
+	/*declare portcullis-thingy related objects and variables*/
+	CANTalon portcullisArm;
+	ToggleSwitch portcullisState;
+	
+	double buttonInitTime = 0;
+
+	
 	/*declare auto-related objects*/
 	SendableChooser autoChooser;
 	
@@ -251,6 +260,10 @@ public class Robot extends IterativeRobot {
     	//create joystick
     	stick1 = new Joystick(0);
     	stick2 = new Joystick(1);
+    	
+    	portcullisArm = new CANTalon(2);
+    	portcullisState = new ToggleSwitch();
+    	
     }
     
     public void autonomousInit() {
@@ -425,6 +438,7 @@ public class Robot extends IterativeRobot {
     	//calculate motor speeds
     	setIntakeSpeed();
     	setShooterSpeed();
+    	setPtcArmSpeed();
     	
     	//if manual drive of the arm is allowed, set the arm speed
     	if(emergencyMode) {
@@ -569,6 +583,27 @@ public class Robot extends IterativeRobot {
     public void turnIntakeOff() {
 		intakeSpeed = 0.0;
 		intakeOn = "Off";
+    }
+    
+    public void setPtcArmSpeed() {
+    		
+    	if(portcullisState.updateState(stick2.getRawButton(LBUMPER))){
+    		buttonInitTime = Timer.getFPGATimestamp();
+    	}
+    	
+    	if (stick2.getRawButton(LTRIGGER)){
+    		portcullisArm.set(0.1);
+    	}
+    	else if (stick2.getRawButton(LBUMPER)){
+    		double currentTime = Timer.getFPGATimestamp();
+    		if ((currentTime - buttonInitTime) < 3) {
+    			portcullisArm.set(-0.1);
+    		}else {
+    			portcullisArm.set(0.0);
+    		}
+    	}else {
+    		portcullisArm.set(0.0);
+    	}
     }
     
     public void setShooterSpeed() {
@@ -1021,4 +1056,5 @@ public class Robot extends IterativeRobot {
     	trigger = new Servo(6);
     	trigger.setAngle(TRIGGEROFFPOSITION);
     }
+    
  }
