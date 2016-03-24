@@ -36,6 +36,8 @@ public class TestMode {
 	
 	public void testPeriodic() {
 		robot.motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
+		robot.visionTurnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
+
 		//robot.gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
 		
 		/*if(Timer.getFPGATimestamp() - initTime > 4) {
@@ -120,7 +122,20 @@ public class TestMode {
 			robot.gyroDriveControl.closeLog();
 		}
 		
+		if(robot.stick2.getRawButton(Robot.LTRIGGER)) {
+			if(!robot.turn){
+				robot.gyroReset();
+				robot.visionTurnControl.setSetpoint(SmartDashboard.getNumber("Motion Plan Target"));
+				robot.visionTurnControl.enable();
+				robot.turn = true;
+			}
+			
+		}else{
+			robot.visionTurnControl.disable();
+			robot.turn = false;
+		}
 		
+		SmartDashboard.putNumber("Gyro Rotation", robot.gyro.getAngle());
 		SmartDashboard.putNumber("Left Encoder (Inches)", Robot.driveEncoderToInches(robot.lDriveEncoder.get()));
 		SmartDashboard.putNumber("Right Encoder (Inches)", Robot.driveEncoderToInches(robot.rDriveEncoder.get()));
 		SmartDashboard.putNumber("Arm Encoder", robot.armEncoder.get());

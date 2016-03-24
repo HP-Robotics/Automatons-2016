@@ -18,7 +18,7 @@ public class PiThread extends Thread {
             while (m_running) {
                 try {
                     m_talk = TalkToPi.recv();
-                    System.out.println(m_talk);
+                    //System.out.println(m_talk);
                 } catch (Exception e) {
                     System.out.println("Except!");
                     break;

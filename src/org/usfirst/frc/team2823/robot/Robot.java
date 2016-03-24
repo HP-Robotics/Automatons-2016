@@ -45,6 +45,8 @@ public class Robot extends IterativeRobot {
 	
 	static final double LEFTGOALDISTANCE = 13.25;
 	static final double CAMERAANGLE = 38;
+	static final double THRESHOLD_VISION_ANGLE = 10;
+	static final double VISION_WAIT_TIME = 0.5;
 	
 	static final int TRIGGEROFFPOSITION = 95;
 	static final int TRIGGERONPOSITION = 65;
@@ -88,6 +90,7 @@ public class Robot extends IterativeRobot {
 	VictorSP rDrive2;
 	
 	ATM2016PIDController turnControl;
+	ATM2016PIDController visionTurnControl;
 	ATM2016PIDController gyroDriveControl;
 	ATM2016PIDController motionDriveControl;
 	
@@ -129,6 +132,8 @@ public class Robot extends IterativeRobot {
 	ToggleSwitch visionShootState;
 	
 	boolean shootingWithVision = false;
+	boolean calculatedShotDistance = false;
+	boolean clearedVisionAverage = false;
 	boolean atShotPosition = false;
 	boolean visionShotInProgress = false;
 	double shooterSpeed = 0.0;
@@ -172,14 +177,20 @@ public class Robot extends IterativeRobot {
 	/*declare test mode-related objects*/
 	TestMode testMode;
 	
+	boolean turn = false;
+	
 	/*declare Raspberry Pi communications-related objects*/
 	PiThread pi;
 	
 	double cameraToGoalDistance = 0.0;
+	double cameraToGoalAngle = 0.0;
 	double cameraToLeftEdge = 0.0;
+	double cameraToRightEdge = 0.0;
 	double lastPiMessage = 0.0;
+	double stopTime = 0.0;
 	
 	boolean piIsStarted = false;
+	boolean setStopTime = false;
 	
 	/*declare joystick and button press-related objects*/
 	Joystick stick1;
@@ -262,7 +273,7 @@ public class Robot extends IterativeRobot {
     	stick1 = new Joystick(0);
     	stick2 = new Joystick(1);
     	
-    	portcullisArm = new CANTalon(2);
+    	portcullisArm = new CANTalon(1);
     	portcullisState = new ToggleSwitch();
     	
     }
@@ -337,86 +348,7 @@ public class Robot extends IterativeRobot {
     public void teleopPeriodic() {
     	
     	runTrigger();
-    	
-    	//run the *magic* button code to read data from the Pi, drive to correct distance, spin up shooter to correct RPM, then fire
-    	if((stick1.getRawButton(ABUTTON) || stick2.getRawButton(ABUTTON))) {
-    		if(!shootingWithVision) {
-				
-    			shootingWithVision = true;
-    			
-    			//get data from Pi
-    			String piData = pi.getLast();
-    			if(piData.contains("GOOD")) {
-    				
-    				motionDriveEnabled = true;
-        			tankDriveEnabled= false;
-        			slowDriveEnabled = false;
-        			lDriveEncoder.reset();
-        			rDriveEncoder.reset();
-        			
-    				String[] piDataArray = piData.split(" ");
-    			
-    				cameraToLeftEdge = Double.parseDouble(piDataArray[2]);
-    				cameraToGoalDistance = Double.parseDouble(piDataArray[3]);
-    				
-        			//calculate distance to wall
-        			double distanceToWall = cameraToGoalDistance * Math.cos(CAMERAANGLE);
-        			
-        			//calculate shooter RPM based on distance to wall
-        			//placeholder value
-        			visionShotSpeed = 3300;
-        			
-        			//spin up shooter wheel
-        			shooterSpeedControl.setSetpoint(visionShotSpeed);
-        			
-        			//calculate target for motion profile
-    				double targetPosition = (LEFTGOALDISTANCE - cameraToLeftEdge);
-    				
-    				//TODO if the target is less than a threshold value, don't try to move
-    				//System.out.println(targetPosition + "\t" + (Robot.MAXVELOCITY/3) + "\t" + (Robot.MAXACCELERATION/5));
-    				motionDriveControl.configureGoal(-targetPosition, Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
-    				motionDriveControl.enable();
-    			}
-    			
-    		}
-    		
-    		if(motionDriveControl.isPlanFinished() && !atShotPosition) {
-    			atShotPosition = true;
-    			
-    			//raise the arm
-    			disableArmPid();
-    			armControl.setSetpoint(SHOOTSETPOINT);
-    			enableArmPid();
-    		}
-    		
-    		if((armEncoder.get() < (SHOOTSETPOINT + OFFSET)) && /*shooterIsAtSpeed(visionShotSpeed) && */!visionShotInProgress) {
-    			visionShotInProgress = true;
-    			
-    			//try to shoot if the arm is above the high travel setpoint and the shooter is at speed
-    			trigger.setAngle(TRIGGERONPOSITION);
-    			
-    			TalkToPi.rawCommand("WATCH");
-    			lastPiMessage = Timer.getFPGATimestamp();
-    		}
-    		
-    	} else {
-    		//stop the *magic* shooting if the button is released
-    		shootingWithVision = false;
-    		atShotPosition = false;
-    		visionShotInProgress = false;
-    		motionDriveEnabled = false;
-    		
-    		
-    		//reset the trigger
-    		trigger.setAngle(TRIGGEROFFPOSITION);
-    		
-    		//lower the arm to the previous setpoint
-    		disableArmPid();
-    		armControl.setSetpoint(setpoints[currentSetpoint]);
-    		enableArmPid();
-    		
-    		motionDriveControl.disable();
-    	}
+    	shootWithMagic();
     	
     	//set tank drive or slow drive based on the height of the arm
     	if (!gyroDrive && !motionDriveEnabled) {
@@ -595,19 +527,19 @@ public class Robot extends IterativeRobot {
     
     public void setPtcArmSpeed() {
     		
-    	if(portcullisState.updateState(stick2.getRawButton(LBUMPER))){
+    	if(portcullisState.updateState(stick2.getRawButton(LTRIGGER))){
     		buttonInitTime = Timer.getFPGATimestamp();
     	}
     	
-    	if (stick2.getRawButton(LTRIGGER)){
-    		portcullisArm.set(0.1);
+    	if (stick2.getRawButton(LBUMPER)){
+    		portcullisArm.set(0.3);
     	}
-    	else if (stick2.getRawButton(LBUMPER)){
+    	else if (stick2.getRawButton(LTRIGGER)){
     		double currentTime = Timer.getFPGATimestamp();
-    		if ((currentTime - buttonInitTime) < 3) {
-    			portcullisArm.set(-0.1);
+    		if ((currentTime - buttonInitTime) < 2) {
+    			portcullisArm.set(-0.3);
     		}else {
-    			portcullisArm.set(0.0);
+    			portcullisArm.set(-0.1);
     		}
     	}else {
     		portcullisArm.set(0.0);
@@ -643,6 +575,148 @@ public class Robot extends IterativeRobot {
     		TalkToPi.rawCommand("RPM " + shooterTargetRPMs[currentTargetRPM]);
     		lastPiMessage = Timer.getFPGATimestamp();
     	}
+    }
+    //QUICKCLICK shoot with magic
+    public void shootWithMagic () {
+    	//run the *magic* button code to read data from the Pi, drive to correct distance, spin up shooter to correct RPM, then fire
+    	if((stick1.getRawButton(ABUTTON) || stick2.getRawButton(ABUTTON))) {
+    		if(!shootingWithVision) {
+				System.err.println("A BUTTON PRESSED");
+    			String piData = pi.getLast();
+    	    	if(piData == null){
+    	    		return;
+    	    	}
+    			
+    			shootingWithVision = true;
+    			
+    			//get data from Pi
+    			if(piData.contains("GOOD")) {
+    				
+    				motionDriveEnabled = true;
+        			tankDriveEnabled= false;
+        			slowDriveEnabled = false;
+
+    				String[] piDataArray = piData.split(" ");
+    			
+    				cameraToGoalAngle = Double.parseDouble(piDataArray[1]);
+    				
+    				//check if robot is within an acceptable angle range
+    				setStopTime = true;
+    				
+    				if(Math.abs(cameraToGoalAngle) > THRESHOLD_VISION_ANGLE) {
+        				gyroReset();
+    					visionTurnControl.setSetpoint(cameraToGoalAngle);
+    					System.err.println("CAMERA ANGLE " + cameraToGoalAngle);
+    					visionTurnControl.enable();
+    					
+    					stopTime = Timer.getFPGATimestamp() + 1.3;
+
+    				}else {
+    					stopTime = Timer.getFPGATimestamp() + 0.6;
+
+    				}
+    			}
+    		}
+    		
+    		//a moment before the stopTime has finished, clear the camera running average
+    		if(Timer.getFPGATimestamp() > (stopTime - 0.6) && setStopTime && !clearedVisionAverage) {
+    			clearedVisionAverage = true;
+    			
+    			visionTurnControl.disable();
+    			
+    			//clear Pi running average
+				TalkToPi.rawCommand("CLEAR");
+    			lastPiMessage = Timer.getFPGATimestamp();
+    			
+    		}
+    		
+    		if(Timer.getFPGATimestamp()  > stopTime && setStopTime && !calculatedShotDistance) {
+				calculatedShotDistance = true;
+
+				//re-get data from Pi after waiting
+				String piData = pi.getLast();
+				
+				//stop magic shooting if the goal is bad
+				if(piData == null || piData.contains("BAD")) {
+    	    		return;
+    	    	}
+				
+				String[] piDataArray = piData.split(" ");
+    			
+				cameraToGoalAngle = Double.parseDouble(piDataArray[1]);
+				cameraToLeftEdge = Double.parseDouble(piDataArray[2]);
+				cameraToGoalDistance = Double.parseDouble(piDataArray[3]);
+				cameraToRightEdge = Double.parseDouble(piDataArray[4]);
+				
+				if(Math.abs(cameraToGoalAngle) > THRESHOLD_VISION_ANGLE) {
+					System.err.println("The vision data has not updated, quitting");
+					return;
+				}
+				
+    			//calculate distance to wall
+    			double distanceToWall = cameraToGoalDistance * Math.cos(CAMERAANGLE);
+    			
+    			//calculate shooter RPM based on distance to wall
+    			//placeholder value
+    			visionShotSpeed = 3300;
+    			
+    			//spin up shooter wheel
+    			shooterSpeedControl.setSetpoint(visionShotSpeed);
+    			
+    			//calculate target for motion profile
+				double targetPosition = -(LEFTGOALDISTANCE - cameraToLeftEdge);
+    			lDriveEncoder.reset();
+    			rDriveEncoder.reset();
+    			
+				//TODO if the target is less than a threshold value, don't try to move
+				//System.out.println(targetPosition + "\t" + (Robot.MAXVELOCITY/3) + "\t" + (Robot.MAXACCELERATION/5));
+				motionDriveControl.configureGoal(targetPosition, Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
+				System.err.println("TARGET " + (targetPosition));
+				motionDriveControl.enable();
+			}
+    		
+    		if(motionDriveControl.isPlanFinished() && !atShotPosition) {
+    			atShotPosition = true;
+    			
+    			//raise the arm
+    			disableArmPid();
+    			armControl.setSetpoint(SHOOTSETPOINT);
+    			enableArmPid();
+    		}
+    		
+    		if((armEncoder.get() < (SHOOTSETPOINT + OFFSET)) && /*shooterIsAtSpeed(visionShotSpeed) && */!visionShotInProgress) {
+    			visionShotInProgress = true;
+    			
+    			//try to shoot if the arm is above the high travel setpoint and the shooter is at speed
+    			trigger.setAngle(TRIGGERONPOSITION);
+    			
+    			TalkToPi.rawCommand("WATCH");
+    			lastPiMessage = Timer.getFPGATimestamp();
+    		}
+    		
+    	} else {
+    		//stop the *magic* shooting if the button is released
+    		shootingWithVision = false;
+    		calculatedShotDistance = false;
+    		clearedVisionAverage = false;
+    		atShotPosition = false;
+    		visionShotInProgress = false;
+    		motionDriveEnabled = false;
+    		setStopTime = false;
+    		
+    		//reset the trigger
+    		trigger.setAngle(TRIGGEROFFPOSITION);
+    		
+    		//lower the arm to the previous setpoint
+    		disableArmPid();
+    		armControl.setSetpoint(setpoints[currentSetpoint]);
+    		enableArmPid();
+    		
+    		motionDriveControl.disable();
+			visionTurnControl.disable();
+
+    	}
+    	
     }
     
     public void setArmSpeed() {
@@ -959,6 +1033,9 @@ public class Robot extends IterativeRobot {
     	rDrive2 = new VictorSP(1);
     	
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
+    	//visionTurnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput()); 
+    	visionTurnControl = new ATM2016PIDController(0.04, 0.0000001, 0.08, gyro, new GyroTurnOutput());
+    	
     	//gyroDriveControl = new ATM2016PIDController  (0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput(), 0.01);
     	//motionDriveControl = new ATM2016PIDController(0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.01);
     	gyroDriveControl = new ATM2016PIDController  (0.07, 0.00015, 0.2, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput(), 0.01);
