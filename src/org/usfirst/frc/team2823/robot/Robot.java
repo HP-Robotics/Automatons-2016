@@ -30,7 +30,8 @@ public class Robot extends IterativeRobot {
 	//QUICKCLICK declarations
 	
 	/*declare constants*/
-	static final int CALIBRATIONOFFSET = 40;
+	//this should be 40 for the old arm
+	static final int CALIBRATIONOFFSET = 0;
 	
 	static final int SHOOTSETPOINT = (0 + CALIBRATIONOFFSET);
 	static final int HIGHTRAVELSETPOINT = (600 + CALIBRATIONOFFSET);
@@ -39,9 +40,15 @@ public class Robot extends IterativeRobot {
 	static final int INTAKESETPOINT = (2400 + CALIBRATIONOFFSET);
 	static final int OFFSET = 100;
 	
-	static final double FARSPEED = 3300.0;
-	static final double MIDSPEED = 3200.0;
-	static final double CLOSESPEED = 3425.0;
+	//these values work well for the old flywheel
+	//static final double FARSPEED = 3300.0;
+	//static final double MIDSPEED = 3200.0;
+	//static final double CLOSESPEED = 3425.0;
+	
+	//these values work well for the new flywheel
+	static final double FARSPEED = 3700.0;
+	static final double MIDSPEED = 3600.0;
+	static final double CLOSESPEED = 3800.0;
 	
 	static final double LEFTGOALDISTANCE = 13.25;
 	static final double CAMERAANGLE = 38;
@@ -96,6 +103,7 @@ public class Robot extends IterativeRobot {
 	
 	double leftSpeed;
 	double rightSpeed;
+	double preTargetPosition = 0.0;
 	boolean gyroDrive = false;
 	boolean drivePIDEnabled = false;
 	boolean motionDriveEnabled = false;
@@ -138,7 +146,7 @@ public class Robot extends IterativeRobot {
 	boolean visionShotInProgress = false;
 	double shooterSpeed = 0.0;
 	double visionShotSpeed = 0.0;
-	int currentTargetRPM = 1;
+	int currentTargetRPM = 2;
 	double[] shooterTargetRPMs = {FARSPEED, MIDSPEED, CLOSESPEED};
 	String[] shooterTargetNames = {"Far Away", "Mid", "Close Up"};
 	
@@ -273,6 +281,7 @@ public class Robot extends IterativeRobot {
     	stick1 = new Joystick(0);
     	stick2 = new Joystick(1);
     	
+    	//FIXME this should be CANTalon(1)
     	portcullisArm = new CANTalon(1);
     	portcullisState = new ToggleSwitch();
     	
@@ -393,7 +402,7 @@ public class Robot extends IterativeRobot {
     	
     	//drive motors using calculated speeds
     	intake.set(intakeSpeed);
-    	shooter.set(shooterSpeed);
+    	//shooter.set(shooterSpeed);
     	
     	goGyro();
     	//QUICKCLICK tank drive
@@ -441,15 +450,17 @@ public class Robot extends IterativeRobot {
     	if(pi.getLast() != null) {
     		a = pi.getLast().split(" ");
     	} else {
-    		a = new String[4];
+    		a = new String[5];
     		a[0] = "BAD";
     		a[2] = "0";
     		a[3] = "0";
+    		a[4] = "0";
     	}
     	
     	SmartDashboard.putString("Is vision good", a[0]);
     	SmartDashboard.putString("Camera-to-goal distance", a[3]);
     	SmartDashboard.putString("Camera-to-left-side distance", a[2]);
+    	SmartDashboard.putString("Camera-to-right-side distance", a[4]);
     	
     	if(shooterSpeedControl.isEnabled()) {
     		SmartDashboard.putNumber("Error", shooterSpeedControl.getAvgError());
@@ -559,7 +570,7 @@ public class Robot extends IterativeRobot {
     			
     			//tankDriveEnabled = false;
     			
-    		} else {
+    		} else if(!shootingWithVision) {
     			System.out.println("Shooter PID should be off");
     			shooterSpeedControl.disable();
     			shooterSpeedControl.reset();
@@ -576,7 +587,8 @@ public class Robot extends IterativeRobot {
     		lastPiMessage = Timer.getFPGATimestamp();
     	}
     }
-    //QUICKCLICK shoot with magic
+    
+    //QUICKCLICK shootWithMagic
     public void shootWithMagic () {
     	//run the *magic* button code to read data from the Pi, drive to correct distance, spin up shooter to correct RPM, then fire
     	if((stick1.getRawButton(ABUTTON) || stick2.getRawButton(ABUTTON))) {
@@ -589,19 +601,41 @@ public class Robot extends IterativeRobot {
     			
     			shootingWithVision = true;
     			
-    			//get data from Pi
+    			//try to fire if the goal is visible
     			if(piData.contains("GOOD")) {
     				
     				motionDriveEnabled = true;
         			tankDriveEnabled= false;
         			slowDriveEnabled = false;
-
+        			
+        			//get data from Pi
     				String[] piDataArray = piData.split(" ");
     			
     				cameraToGoalAngle = Double.parseDouble(piDataArray[1]);
+    				cameraToLeftEdge = Double.parseDouble(piDataArray[2]);
+    				cameraToGoalDistance = Double.parseDouble(piDataArray[3]);
+    				cameraToRightEdge = Double.parseDouble(piDataArray[4]);
     				
-    				//check if robot is within an acceptable angle range
+    				//pre-calculate shooter RPM based on distance to wall
+        			double preVisionShotSpeed = (-0.002342381 * Math.pow(cameraToGoalDistance, 3)) + (0.83275224 * Math.pow(cameraToGoalDistance, 2)) +
+        									 (-89.22806 * cameraToGoalDistance) + 6549.93;
+        			
+        			//spin up shooter wheel to pre-calculated RPM
+        			shooterSpeedControl.disable();
+        			shooterSpeedControl.setSetpointInRPMs(preVisionShotSpeed);
+        			shooterSpeedControl.enable();
+    				
+    				//pre-calculate motion plan movement
+    				preTargetPosition = (cameraToLeftEdge - ((cameraToLeftEdge - cameraToRightEdge) / 2)) / Math.cos(Math.toRadians(cameraToGoalAngle));
+    				//preTargetPosition = -((cameraToLeftEdge + cameraToRightEdge) / 2) / Math.cos(cameraToGoalAngle);
+    				
+    				System.out.println("PRE-TARGET " + preTargetPosition);
+    				
+    				//check if robot is within an acceptable angle range, and set wait times accordingly
     				setStopTime = true;
+    				
+    				//TODO remove me!
+    				calculatedShotDistance = true;
     				
     				if(Math.abs(cameraToGoalAngle) > THRESHOLD_VISION_ANGLE) {
         				gyroReset();
@@ -628,18 +662,23 @@ public class Robot extends IterativeRobot {
 				TalkToPi.rawCommand("CLEAR");
     			lastPiMessage = Timer.getFPGATimestamp();
     			
+    			//pre-move based on data from before turn
+    			lDriveEncoder.reset();
+    			rDriveEncoder.reset();
+    			
+				//TODO if the target is less than a threshold value, don't try to move
+				//System.out.println(targetPosition + "\t" + (Robot.MAXVELOCITY/3) + "\t" + (Robot.MAXACCELERATION/5));
+				motionDriveControl.configureGoal(preTargetPosition, Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
+				System.err.println("TARGET " + (preTargetPosition));
+				motionDriveControl.enable();
+    			
     		}
     		
-    		if(Timer.getFPGATimestamp()  > stopTime && setStopTime && !calculatedShotDistance) {
+    		/*if(Timer.getFPGATimestamp()  > stopTime && setStopTime && !calculatedShotDistance) {
 				calculatedShotDistance = true;
 
 				//re-get data from Pi after waiting
 				String piData = pi.getLast();
-				
-				//stop magic shooting if the goal is bad
-				if(piData == null || piData.contains("BAD")) {
-    	    		return;
-    	    	}
 				
 				String[] piDataArray = piData.split(" ");
     			
@@ -653,18 +692,18 @@ public class Robot extends IterativeRobot {
 					return;
 				}
 				
-    			//calculate distance to wall
-    			double distanceToWall = cameraToGoalDistance * Math.cos(CAMERAANGLE);
-    			
-    			//calculate shooter RPM based on distance to wall
-    			//placeholder value
-    			visionShotSpeed = 3300;
+				//calculate shooter RPM based on distance to wall
+    			double visionShotSpeed = (-0.002342381 * Math.pow(cameraToGoalDistance, 3)) + (0.83275224 * Math.pow(cameraToGoalDistance, 2)) +
+    									 (-89.22806 * cameraToGoalDistance) + 6549.93;
     			
     			//spin up shooter wheel
-    			shooterSpeedControl.setSetpoint(visionShotSpeed);
+    			shooterSpeedControl.disable();
+    			shooterSpeedControl.setSetpointInRPMs(visionShotSpeed);
+    			shooterSpeedControl.enable();
     			
     			//calculate target for motion profile
-				double targetPosition = -(LEFTGOALDISTANCE - cameraToLeftEdge);
+				//double targetPosition = cameraToLeftEdge - ((cameraToLeftEdge - cameraToRightEdge) / 2);
+				double targetPosition = ((cameraToLeftEdge + cameraToRightEdge) / 2);
     			lDriveEncoder.reset();
     			rDriveEncoder.reset();
     			
@@ -673,9 +712,9 @@ public class Robot extends IterativeRobot {
 				motionDriveControl.configureGoal(targetPosition, Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
 				System.err.println("TARGET " + (targetPosition));
 				motionDriveControl.enable();
-			}
+			}*/
     		
-    		if(motionDriveControl.isPlanFinished() && !atShotPosition) {
+    		if(motionDriveControl.isPlanFinished() && /*calculatedShotDistance*/ clearedVisionAverage && !atShotPosition) {
     			atShotPosition = true;
     			
     			//raise the arm
@@ -684,7 +723,7 @@ public class Robot extends IterativeRobot {
     			enableArmPid();
     		}
     		
-    		if((armEncoder.get() < (SHOOTSETPOINT + OFFSET)) && /*shooterIsAtSpeed(visionShotSpeed) && */!visionShotInProgress) {
+    		if((armEncoder.get() < (SHOOTSETPOINT + OFFSET)) && shooterIsAtSpeed(100) && atShotPosition && !visionShotInProgress) {
     			visionShotInProgress = true;
     			
     			//try to shoot if the arm is above the high travel setpoint and the shooter is at speed
@@ -695,28 +734,29 @@ public class Robot extends IterativeRobot {
     		}
     		
     	} else {
-    		//stop the *magic* shooting if the button is released
-    		shootingWithVision = false;
-    		calculatedShotDistance = false;
-    		clearedVisionAverage = false;
-    		atShotPosition = false;
-    		visionShotInProgress = false;
-    		motionDriveEnabled = false;
-    		setStopTime = false;
-    		
-    		//reset the trigger
-    		trigger.setAngle(TRIGGEROFFPOSITION);
-    		
-    		//lower the arm to the previous setpoint
-    		disableArmPid();
-    		armControl.setSetpoint(setpoints[currentSetpoint]);
-    		enableArmPid();
-    		
-    		motionDriveControl.disable();
-			visionTurnControl.disable();
-
+    		//stop the *magic* shooting if the button is released after beginning a vision shot
+    		if(shootingWithVision) {
+    			shootingWithVision = false;
+    			calculatedShotDistance = false;
+    			clearedVisionAverage = false;
+    			atShotPosition = false;
+    			visionShotInProgress = false;
+    			motionDriveEnabled = false;
+    			setStopTime = false;
+    			
+    			//reset the trigger
+    			trigger.setAngle(TRIGGEROFFPOSITION);
+    			
+    			//lower the arm to the previous setpoint
+    			disableArmPid();
+    			armControl.setSetpoint(setpoints[currentSetpoint]);
+    			enableArmPid();
+    			
+    			shooterSpeedControl.disable();
+    			motionDriveControl.disable();
+				visionTurnControl.disable();
+    		}
     	}
-    	
     }
     
     public void setArmSpeed() {
@@ -769,7 +809,7 @@ public class Robot extends IterativeRobot {
     		}
     		
     	}
-    	else {
+    	else if(firingInProgress) {
     		trigger.setAngle(TRIGGEROFFPOSITION);
     		firingInProgress = false;
     	}
@@ -1033,8 +1073,10 @@ public class Robot extends IterativeRobot {
     	rDrive2 = new VictorSP(1);
     	
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
-    	//visionTurnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput()); 
-    	visionTurnControl = new ATM2016PIDController(0.04, 0.0000001, 0.08, gyro, new GyroTurnOutput());
+    	visionTurnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
+    	
+    	//these PID constants work well for turning on wood shop concrete
+    	//visionTurnControl = new ATM2016PIDController(0.04, 0.0000001, 0.08, gyro, new GyroTurnOutput());
     	
     	//gyroDriveControl = new ATM2016PIDController  (0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput(), 0.01);
     	//motionDriveControl = new ATM2016PIDController(0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.01);
@@ -1082,6 +1124,7 @@ public class Robot extends IterativeRobot {
     	upperLimitSwitch = new DigitalInput(8);
     	lowerLimitSwitch = new DigitalInput(7);
     	
+    	//FIXME this should be CANTalon(0)
     	arm = new CANTalon(0);
     	
     	armEncoder = new Encoder(5, 6, true, EncodingType.k4X);
