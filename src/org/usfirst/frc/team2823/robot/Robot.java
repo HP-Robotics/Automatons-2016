@@ -238,7 +238,6 @@ public class Robot extends IterativeRobot {
 		System.out.println("switched: " + b);
 		System.out.println("enabled:" + s.switchEnabled());
 		
-		getHttpData("https://httpbin.org/get");
 	}*/
 	
 	
@@ -961,32 +960,6 @@ public class Robot extends IterativeRobot {
     	
     	
 
-    }
-    
-    //QUICKCLICK getHttpData
-    public static void getHttpData(String address) {
-    	try {
-    		URL url = new URL(address);
-    		
-    		try {
-    			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-    			connection.setRequestMethod("GET");
-    			connection.connect();
-    			
-    			InputStream stream = connection.getInputStream();
-    			
-    			 BufferedReader in = new BufferedReader(new InputStreamReader(stream));
-    			 
-    			 String inputLine;
-    			 while((inputLine = in.readLine()) != null) {
-    				 //System.out.println(inputLine);
-    			 }
-    			 
-    			 in.close();
-    			
-    		} catch(IOException e) {}
-    		
-    	} catch(MalformedURLException e) {}
     }
     
     //QUICKCLICK creations
