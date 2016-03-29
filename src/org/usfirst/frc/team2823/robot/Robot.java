@@ -626,19 +626,16 @@ public class Robot extends IterativeRobot {
         			shooterSpeedControl.enable();
     				
     				//pre-calculate motion plan movement
-    				preTargetPosition = (cameraToLeftEdge - ((cameraToLeftEdge - cameraToRightEdge) / 2)) / Math.cos(Math.toRadians(cameraToGoalAngle));
-    				//preTargetPosition = -((cameraToLeftEdge + cameraToRightEdge) / 2) / Math.cos(cameraToGoalAngle);
+    				preTargetPosition = (cameraToLeftEdge - ((cameraToLeftEdge - cameraToRightEdge) / 2));
     				
     				System.out.println("PRE-TARGET " + preTargetPosition);
     				
     				//check if robot is within an acceptable angle range, and set wait times accordingly
     				setStopTime = true;
     				
-    				//TODO remove me!
-    				calculatedShotDistance = true;
+    				gyroReset();
     				
     				if(Math.abs(cameraToGoalAngle) > THRESHOLD_VISION_ANGLE) {
-        				gyroReset();
     					visionTurnControl.setSetpoint(cameraToGoalAngle);
     					System.err.println("CAMERA ANGLE " + cameraToGoalAngle);
     					visionTurnControl.enable();
@@ -667,8 +664,7 @@ public class Robot extends IterativeRobot {
     			rDriveEncoder.reset();
     			
 				//TODO if the target is less than a threshold value, don't try to move
-				//System.out.println(targetPosition + "\t" + (Robot.MAXVELOCITY/3) + "\t" + (Robot.MAXACCELERATION/5));
-				motionDriveControl.configureGoal(preTargetPosition, Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
+				motionDriveControl.configureGoal((preTargetPosition / Math.cos(Math.toRadians(gyro.getAngle()))), Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
 				System.err.println("TARGET " + (preTargetPosition));
 				motionDriveControl.enable();
     			
