@@ -86,7 +86,6 @@ public class Robot extends IterativeRobot {
 	VictorSP rDrive2;
 	
 	ATM2016PIDController turnControl;
-	ATM2016PIDController turnControl;
 	ATM2016PIDController gyroDriveControl;
 	ATM2016PIDController motionDriveControl;
 	
@@ -1019,10 +1018,9 @@ public class Robot extends IterativeRobot {
     	rDrive2 = new VictorSP(1);
     	
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
-    	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
     	
     	//these PID constants work well for turning on wood shop concrete
-    	//visionTurnControl = new ATM2016PIDController(0.04, 0.0000001, 0.08, gyro, new GyroTurnOutput());
+    	//turnControl = new ATM2016PIDController(0.04, 0.0000001, 0.08, gyro, new GyroTurnOutput());
     	
     	//gyroDriveControl = new ATM2016PIDController  (0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput(), 0.01);
     	//motionDriveControl = new ATM2016PIDController(0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.01);
