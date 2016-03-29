@@ -36,7 +36,7 @@ public class TestMode {
 	
 	public void testPeriodic() {
 		robot.motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
-		robot.visionTurnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
+		robot.turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
 
 		//robot.gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
 		
@@ -125,13 +125,13 @@ public class TestMode {
 		if(robot.stick2.getRawButton(Robot.LTRIGGER)) {
 			if(!robot.turn){
 				robot.gyroReset();
-				robot.visionTurnControl.setSetpoint(SmartDashboard.getNumber("Motion Plan Target"));
-				robot.visionTurnControl.enable();
+				robot.turnControl.setSetpoint(SmartDashboard.getNumber("Motion Plan Target"));
+				robot.turnControl.enable();
 				robot.turn = true;
 			}
 			
 		}else{
-			robot.visionTurnControl.disable();
+			robot.turnControl.disable();
 			robot.turn = false;
 		}
 		

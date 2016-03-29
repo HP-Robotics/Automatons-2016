@@ -86,7 +86,7 @@ public class Robot extends IterativeRobot {
 	VictorSP rDrive2;
 	
 	ATM2016PIDController turnControl;
-	ATM2016PIDController visionTurnControl;
+	ATM2016PIDController turnControl;
 	ATM2016PIDController gyroDriveControl;
 	ATM2016PIDController motionDriveControl;
 	
@@ -619,9 +619,9 @@ public class Robot extends IterativeRobot {
     				gyroReset();
     				
     				if(Math.abs(cameraToGoalAngle) > THRESHOLD_VISION_ANGLE) {
-    					visionTurnControl.setSetpoint(cameraToGoalAngle);
+    					turnControl.setSetpoint(cameraToGoalAngle);
     					System.err.println("CAMERA ANGLE " + cameraToGoalAngle);
-    					visionTurnControl.enable();
+    					turnControl.enable();
     					
     					stopTime = Timer.getFPGATimestamp() + 1.3;
 
@@ -636,7 +636,7 @@ public class Robot extends IterativeRobot {
     		if(Timer.getFPGATimestamp() > (stopTime - 0.6) && setStopTime && !clearedVisionAverage) {
     			clearedVisionAverage = true;
     			
-    			visionTurnControl.disable();
+    			turnControl.disable();
     			
     			//clear Pi running average
 				TalkToPi.rawCommand("CLEAR");
@@ -733,7 +733,7 @@ public class Robot extends IterativeRobot {
     			
     			shooterSpeedControl.disable();
     			motionDriveControl.disable();
-				visionTurnControl.disable();
+				turnControl.disable();
     		}
     	}
     }
@@ -1019,7 +1019,7 @@ public class Robot extends IterativeRobot {
     	rDrive2 = new VictorSP(1);
     	
     	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
-    	visionTurnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
+    	turnControl = new ATM2016PIDController(0.08, 0.0000001, 0.005, gyro, new GyroTurnOutput());
     	
     	//these PID constants work well for turning on wood shop concrete
     	//visionTurnControl = new ATM2016PIDController(0.04, 0.0000001, 0.08, gyro, new GyroTurnOutput());
