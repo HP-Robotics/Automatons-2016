@@ -139,9 +139,6 @@ public class Robot extends IterativeRobot {
 	String[] shooterTargetNames = {"Far Away", "Mid", "Close Up"};
 	
 	/*declare arm-related objects and variables*/
-	DigitalInput upperLimitSwitch;
-	DigitalInput lowerLimitSwitch;
-	
 	CANTalon arm;
 	
 	Encoder armEncoder;
@@ -739,10 +736,10 @@ public class Robot extends IterativeRobot {
     
     public void setArmSpeed() {
     	//set the arm speed using the left and right bumper
-    	if(stick1.getRawButton(RBUMPER)/* && !upperLimitSwitch.get()*/){
+    	if(stick1.getRawButton(RBUMPER)){
     		armSpeed = -SmartDashboard.getNumber("Arm Speed");
     	}
-    	else if(stick1.getRawButton(RTRIGGER)/* && !lowerLimitSwitch.get()*/){
+    	else if(stick1.getRawButton(RTRIGGER)){
     		armSpeed = SmartDashboard.getNumber("Arm Speed");
     	}
     	else {
@@ -1065,8 +1062,6 @@ public class Robot extends IterativeRobot {
     
     //create objects to run the arm system
     public void createArmObjects() {
-    	upperLimitSwitch = new DigitalInput(8);
-    	lowerLimitSwitch = new DigitalInput(7);
     	
     	//FIXME this should be CANTalon(0)
     	arm = new CANTalon(0);
