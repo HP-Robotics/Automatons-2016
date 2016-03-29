@@ -968,6 +968,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     m_pidOutput.pidWrite(0);
     m_enabled = false;
 
+
     if (table != null) {
       table.putBoolean("enabled", false);
     }
@@ -998,6 +999,8 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
     m_prevError = 0;
     m_totalError = 0;
     m_result = 0;
+    m_filteredDifference = 0;
+    
   }
 
   @Override

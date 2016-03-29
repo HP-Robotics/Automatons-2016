@@ -333,7 +333,7 @@ public class Robot extends IterativeRobot {
     	gyroReset();
     	
     	//disable autonomous PID
-    	gyroDriveControl.disable();
+    	gyroDriveControl.reset();
     	gyroDriveControl.setOutputRange(-1.0, 1.0);
     
     }
@@ -359,7 +359,7 @@ public class Robot extends IterativeRobot {
     	if(emergencyState.updateState(stick1.getRawButton(STARTBUTTON) || stick2.getRawButton(STARTBUTTON))) {
     		if(emergencyState.switchEnabled()) {
     			emergencyMode = true;
-    			disableArmPid();
+    			disableAndResetArmPid();
     		} else {
     			emergencyMode = false;
     		}
@@ -449,7 +449,7 @@ public class Robot extends IterativeRobot {
     	//turnControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	//armControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	//gyroDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"), SmartDashboard.getNumber("F"));
-    	motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
+    	//motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	
     	if((Timer.getFPGATimestamp()-lastPiMessage) > 1){
     		TalkToPi.rawCommand("HELLO");
@@ -551,7 +551,6 @@ public class Robot extends IterativeRobot {
     			
     		} else if(!shootingWithVision) {
     			System.out.println("Shooter PID should be off");
-    			shooterSpeedControl.disable();
     			shooterSpeedControl.reset();
         		shooterSpeedControl.closeLog();
     			
@@ -600,7 +599,7 @@ public class Robot extends IterativeRobot {
         									 (-89.22806 * cameraToGoalDistance) + 6549.93;
         			
         			//spin up shooter wheel to pre-calculated RPM
-        			shooterSpeedControl.disable();
+        			shooterSpeedControl.reset();
         			shooterSpeedControl.setSetpointInRPMs(preVisionShotSpeed);
         			shooterSpeedControl.enable();
     				
@@ -632,7 +631,7 @@ public class Robot extends IterativeRobot {
     		if(Timer.getFPGATimestamp() > (stopTime - 0.6) && setStopTime && !clearedVisionAverage) {
     			clearedVisionAverage = true;
     			
-    			turnControl.disable();
+    			turnControl.reset();
     			
     			//clear Pi running average
 				TalkToPi.rawCommand("CLEAR");
@@ -672,7 +671,7 @@ public class Robot extends IterativeRobot {
     									 (-89.22806 * cameraToGoalDistance) + 6549.93;
     			
     			//spin up shooter wheel
-    			shooterSpeedControl.disable();
+    			shooterSpeedControl.reset();
     			shooterSpeedControl.setSetpointInRPMs(visionShotSpeed);
     			shooterSpeedControl.enable();
     			
@@ -693,7 +692,7 @@ public class Robot extends IterativeRobot {
     			atShotPosition = true;
     			
     			//raise the arm
-    			disableArmPid();
+    			disableAndResetArmPid();
     			armControl.setSetpoint(SHOOTSETPOINT);
     			enableArmPid();
     		}
@@ -723,13 +722,13 @@ public class Robot extends IterativeRobot {
     			trigger.setAngle(TRIGGEROFFPOSITION);
     			
     			//lower the arm to the previous setpoint
-    			disableArmPid();
+    			disableAndResetArmPid();
     			armControl.setSetpoint(setpoints[currentSetpoint]);
     			enableArmPid();
     			
-    			shooterSpeedControl.disable();
-    			motionDriveControl.disable();
-				turnControl.disable();
+    			shooterSpeedControl.reset();
+    			motionDriveControl.reset();
+				turnControl.reset();
     		}
     	}
     }
@@ -753,7 +752,7 @@ public class Robot extends IterativeRobot {
     		if(currentSetpoint > 0) {
     			currentSetpoint--;
     			
-    			disableArmPid();
+    			disableAndResetArmPid();
     			armControl.setSetpoint(setpoints[currentSetpoint]);
     			enableArmPid();
     		}
@@ -764,7 +763,7 @@ public class Robot extends IterativeRobot {
     		if(currentSetpoint < setpoints.length-1) {
     			currentSetpoint++;
     			
-    			disableArmPid();
+    			disableAndResetArmPid();
     			armControl.setSetpoint(setpoints[currentSetpoint]);
     			enableArmPid();
     		}
@@ -870,9 +869,9 @@ public class Robot extends IterativeRobot {
 		armControl.enable();
     }
     
-    public void disableArmPid() {
+    public void disableAndResetArmPid() {
 		
-		armControl.disable();
+		armControl.reset();
 		//armControl.closeLog();
     }
     
@@ -930,7 +929,7 @@ public class Robot extends IterativeRobot {
     public void goGyro (){
     	if(armEncoder.get() < (MIDSETPOINT - OFFSET)) {
     		if (gyroDrive) {
-    			turnControl.disable();
+    			turnControl.reset();
     			//turnControl.closeLog();
     			turnControl.reset();
     		}
@@ -959,8 +958,7 @@ public class Robot extends IterativeRobot {
     		
     	} else if(gyroDrive) {
     		gyroDrive = false;
-    		
-    		turnControl.disable();
+    
     		//turnControl.closeLog();
     		turnControl.reset();
     	}
@@ -1019,8 +1017,11 @@ public class Robot extends IterativeRobot {
     	//these PID constants work well for turning on wood shop concrete
     	//turnControl = new ATM2016PIDController(0.04, 0.0000001, 0.08, gyro, new GyroTurnOutput());
     	
+    	//for main robot
     	//gyroDriveControl = new ATM2016PIDController  (0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput(), 0.01);
     	//motionDriveControl = new ATM2016PIDController(0.05, 0.00015, 0.05, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.01);
+    	
+    	//for shadow robot
     	gyroDriveControl = new ATM2016PIDController  (0.07, 0.00015, 0.2, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput(), 0.01);
     	motionDriveControl = new ATM2016PIDController(0.07, 0.00025, 0.2, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.01);
     	
