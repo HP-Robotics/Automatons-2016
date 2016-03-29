@@ -103,7 +103,6 @@ public class Robot extends IterativeRobot {
 	static final double ENCODER_RESOLUTION = 2048;
 	static final double FUDGE_FACTOR = (194.0/196.0);
 	static final double R = (5.875 * FUDGE_FACTOR);
-	//static final double DRIVE_RATIO = (1.786 / 4.032);
 	static final double DRIVE_RATIO = (1.432 / 3.826);
 	
 	ToggleSwitch pidState;
@@ -248,7 +247,7 @@ public class Robot extends IterativeRobot {
     	createIntakeObjects();
     	createShooterObjects();
     	createArmObjects();
-    	putSmartDashboardValues();
+    	putInitialSmartDashboardValues();
     	createAutoModes();
     	createTriggerObjects();
     	
@@ -388,20 +387,7 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
-    	//send data to Smart Dashboard
-    	SmartDashboard.putString("ShooterTargetRPM", shooterTargetRPMs[currentTargetRPM] + "( " + shooterTargetNames[currentTargetRPM] + " )");
-    	SmartDashboard.putString("Arm Setpoint", setpointNames[currentSetpoint] + "( " + setpoints[currentSetpoint]+ " )");
-    	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
-    	SmartDashboard.putNumber("rDrive", rDrive1.getSpeed());
-    	SmartDashboard.putNumber("Gyro Rotation", gyro.getAngle());
-    	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
-    	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
-    	SmartDashboard.putNumber("Left Encoder (Inches)", driveEncoderToInches(lDriveEncoder.get()));
-    	SmartDashboard.putNumber("Arm Encoder", armEncoder.get());
-    	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
-    	SmartDashboard.putNumber("ActualShooterSpeed", shooterCounter.getRateInRPMs());
-    	SmartDashboard.putString("Intake", intakeOn);
-    	SmartDashboard.putString("Arm Setpoint", setpointNames[currentSetpoint]);
+    	putPeriodicSmartDashboardValues();
     	
     	//print Pi data to SmartDashboard
     	String[] a;
@@ -1038,7 +1024,7 @@ public class Robot extends IterativeRobot {
     }
     
     //put initial values to the SmartDashboard
-    public void putSmartDashboardValues() {
+    public void putInitialSmartDashboardValues() {
 
     	SmartDashboard.putNumber("P", 0.05);
     	SmartDashboard.putNumber("I", 0.00015);
@@ -1055,6 +1041,24 @@ public class Robot extends IterativeRobot {
     	//SmartDashboard.putNumber("Servo Angle", TRIGGEROFFPOSITION);
     	SmartDashboard.putBoolean("Shoot in Auto?", true);
     		
+    }
+    
+    public void putPeriodicSmartDashboardValues(){
+    	//send data to Smart Dashboard
+    	SmartDashboard.putString("ShooterTargetRPM", shooterTargetRPMs[currentTargetRPM] + "( " + shooterTargetNames[currentTargetRPM] + " )");
+    	SmartDashboard.putString("Arm Setpoint", setpointNames[currentSetpoint] + "( " + setpoints[currentSetpoint]+ " )");
+    	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
+    	SmartDashboard.putNumber("rDrive", rDrive1.getSpeed());
+    	SmartDashboard.putNumber("Gyro Rotation", gyro.getAngle());
+    	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
+    	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
+    	SmartDashboard.putNumber("Left Encoder (Inches)", driveEncoderToInches(lDriveEncoder.get()));
+    	SmartDashboard.putNumber("Arm Encoder", armEncoder.get());
+    	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
+    	SmartDashboard.putNumber("ActualShooterSpeed", shooterCounter.getRateInRPMs());
+    	SmartDashboard.putString("Intake", intakeOn);
+    	SmartDashboard.putString("Arm Setpoint", setpointNames[currentSetpoint]);
+    	
     }
     
     //create autoChooser and add auto modes
