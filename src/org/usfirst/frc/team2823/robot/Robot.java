@@ -129,6 +129,7 @@ public class Robot extends IterativeRobot {
 	ToggleSwitch visionShootState;
 	
 	boolean shootingWithVision = false;
+	boolean capturedFirstFrame = false;
 	boolean calculatedShotDistance = false;
 	boolean clearedVisionAverage = false;
 	boolean atShotPosition = false;
@@ -180,6 +181,7 @@ public class Robot extends IterativeRobot {
 	double cameraToRightEdge = 0.0;
 	double lastPiMessage = 0.0;
 	double stopTime = 0.0;
+	double initFrameCaptureTime = 0.0;
 	
 	boolean piIsStarted = false;
 	boolean setStopTime = false;
@@ -546,13 +548,26 @@ public class Robot extends IterativeRobot {
     	//run the *magic* button code to read data from the Pi, drive to correct distance, spin up shooter to correct RPM, then fire
     	if((stick1.getRawButton(ABUTTON) || stick2.getRawButton(ABUTTON))) {
     		if(!shootingWithVision) {
-				System.err.println("A BUTTON PRESSED");
+    			shootingWithVision = true;
+    			
+    			System.err.println("A BUTTON PRESSED");
+    			
+    			//begin Pi video capture
+    			TalkToPi.rawCommand("WATCH");
+    			lastPiMessage = Timer.getFPGATimestamp();
+    			
+    			initFrameCaptureTime = Timer.getFPGATimestamp();
+    		}
+    		
+    		if(Math.abs(Timer.getFPGATimestamp() - initFrameCaptureTime) > 0.2 && shootingWithVision && !capturedFirstFrame) {
+    			//wait for 200ms before continuing
+    			
     			String piData = pi.getLast();
     	    	if(piData == null){
     	    		return;
     	    	}
     			
-    			shootingWithVision = true;
+    			capturedFirstFrame = true;
     			
     			//try to fire if the goal is visible
     			if(piData.contains("GOOD")) {
@@ -677,15 +692,13 @@ public class Robot extends IterativeRobot {
     			
     			//try to shoot if the arm is above the high travel setpoint and the shooter is at speed
     			trigger.setAngle(TRIGGERONPOSITION);
-    			
-    			TalkToPi.rawCommand("WATCH");
-    			lastPiMessage = Timer.getFPGATimestamp();
     		}
     		
     	} else {
     		//stop the *magic* shooting if the button is released after beginning a vision shot
     		if(shootingWithVision) {
     			shootingWithVision = false;
+    			capturedFirstFrame = false;
     			calculatedShotDistance = false;
     			clearedVisionAverage = false;
     			atShotPosition = false;
