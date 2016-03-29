@@ -95,7 +95,6 @@ public class Robot extends IterativeRobot {
 	double rightSpeed;
 	double preTargetPosition = 0.0;
 	boolean gyroDrive = false;
-	boolean drivePIDEnabled = false;
 	boolean motionDriveEnabled = false;
 	boolean tankDriveEnabled = true;
 	boolean slowDriveEnabled = false;
@@ -162,8 +161,7 @@ public class Robot extends IterativeRobot {
 	CANTalon portcullisArm;
 	ToggleSwitch portcullisState;
 	
-	double buttonInitTime = 0;
-
+	double portcullisInitTime = 0;
 	
 	/*declare auto-related objects*/
 	SendableChooser autoChooser;
@@ -191,7 +189,6 @@ public class Robot extends IterativeRobot {
 	Joystick stick2;
 	
 	
-	ToggleSwitch encoderResetState;
 	
 	/* this class tracks a mode switch, e.g. press X to switch
 	 * to PID drive, press again to switch back to tank drive */
@@ -266,7 +263,6 @@ public class Robot extends IterativeRobot {
     	stick1 = new Joystick(0);
     	stick2 = new Joystick(1);
     	
-    	//FIXME this should be CANTalon(1)
     	portcullisArm = new CANTalon(1);
     	portcullisState = new ToggleSwitch();
     	
@@ -315,10 +311,6 @@ public class Robot extends IterativeRobot {
     	//reset encoders
     	lDriveEncoder.reset();
     	rDriveEncoder.reset();
-    	
-    	//set arm PID to hold
-    	// TODO JUST EXPERIMENTING
-    	//armControl.enable();
     	
     	//disable arm braking
     	arm.enableBrakeMode(false);
@@ -401,12 +393,6 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//send data to Smart Dashboard
-    	/**
-    	 * TgtShtrSpeed: 3900 up close (0 robot widths)
-    	 * TgtShtrSpeed: 3200 @ 1 robot width
-    	 * TgtShtrSpeed: 3300 @ 2 robot widths
-    	 * TgtShtrSpeed: 3300 far away (3 robot widths)
-    	 */
     	SmartDashboard.putString("ShooterTargetRPM", shooterTargetRPMs[currentTargetRPM] + "( " + shooterTargetNames[currentTargetRPM] + " )");
     	SmartDashboard.putString("Arm Setpoint", setpointNames[currentSetpoint] + "( " + setpoints[currentSetpoint]+ " )");
     	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
@@ -515,7 +501,7 @@ public class Robot extends IterativeRobot {
     public void setPtcArmSpeed() {
     		
     	if(portcullisState.updateState(stick2.getRawButton(LTRIGGER))){
-    		buttonInitTime = Timer.getFPGATimestamp();
+    		portcullisInitTime = Timer.getFPGATimestamp();
     	}
     	
     	if (stick2.getRawButton(LBUMPER)){
@@ -523,7 +509,7 @@ public class Robot extends IterativeRobot {
     	}
     	else if (stick2.getRawButton(LTRIGGER)){
     		double currentTime = Timer.getFPGATimestamp();
-    		if ((currentTime - buttonInitTime) < 2) {
+    		if ((currentTime - portcullisInitTime) < 2) {
     			portcullisArm.set(-0.3);
     		}else {
     			portcullisArm.set(-0.1);
@@ -994,7 +980,6 @@ public class Robot extends IterativeRobot {
     	gyroDriveControl = new ATM2016PIDController  (0.07, 0.00015, 0.2, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput(), 0.01);
     	motionDriveControl = new ATM2016PIDController(0.07, 0.00025, 0.2, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.01);
     	
-
     	motionDriveControl.setKaKv(0.0027, 0.0079);
     	//motionDriveControl.setKaKv(0.002, 0.01087);
     	gyroDriveControl.setKaKv(0.002, 0.01087);
@@ -1033,7 +1018,6 @@ public class Robot extends IterativeRobot {
     //create objects to run the arm system
     public void createArmObjects() {
     	
-    	//FIXME this should be CANTalon(0)
     	arm = new CANTalon(0);
     	
     	armEncoder = new Encoder(5, 6, true, EncodingType.k4X);
@@ -1043,9 +1027,7 @@ public class Robot extends IterativeRobot {
     	armControl.setRobot(this);
     	
     	armUpState = new ToggleSwitch();
-    	armDownState = new ToggleSwitch();
-    	encoderResetState = new ToggleSwitch();
-    	
+    	armDownState = new ToggleSwitch();    	
     }
     
     //put initial values to the SmartDashboard
