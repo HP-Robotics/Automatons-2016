@@ -75,6 +75,8 @@ public class Robot extends IterativeRobot {
 	static final double MAXACCELERATION = 275;	//inches / sec^2
 	static final double MAXVELOCITY = 120;		//inches / sec
 	
+	static final double k_ANGLE = 0.1;
+	
 	/*declare drive-related objects and variables*/
 	Encoder lDriveEncoder;
 	Encoder rDriveEncoder;
@@ -788,7 +790,7 @@ public class Robot extends IterativeRobot {
 		@Override
 		public void pidWrite(double output) {
 			SmartDashboard.putNumber("Gyro Drive PIDOutput", output);
-			goNoDrifting(output, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.1, 0.5);
+			goNoDrifting(output, -gyro.getAngle() * k_ANGLE, 0.1, 0.5);
 			
 		}
 		
@@ -932,7 +934,7 @@ public class Robot extends IterativeRobot {
     	}
     	
     	if (stick1.getRawButton(LBUMPER)){
-    		goNoDrifting(0.7, -gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.5, 0.5);
+    		goNoDrifting(0.7, -gyro.getAngle() * k_ANGLE, 0.5, 0.5);
     		if(!gyroDrive){
     			gyroReset();
     			gyroDrive = true;
@@ -942,7 +944,7 @@ public class Robot extends IterativeRobot {
     		
     	} 
     	else if(stick1.getRawButton(LTRIGGER)){
-    		goNoDrifting(-0.7, gyro.getAngle() * SmartDashboard.getNumber("k_angle"), -0.5, 0.5);
+    		goNoDrifting(-0.7, gyro.getAngle() * k_ANGLE, -0.5, 0.5);
     		if(!gyroDrive){
     			gyroReset();
     			gyroDrive = true;
@@ -1080,8 +1082,6 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("I", 0.00015);
     	SmartDashboard.putNumber("D", 0.05);
     	SmartDashboard.putNumber("F", 0.0);
-    	SmartDashboard.putNumber("k_angle", 0.1);
-    	SmartDashboard.putNumber("k_sensitivity", 0.5);
     	SmartDashboard.putNumber("Arm Speed", 0.0);
     	SmartDashboard.putNumber("TestGyro Target (Inches)", 0);
     	SmartDashboard.putNumber("GyroDrive Initial Power", 0.0);
