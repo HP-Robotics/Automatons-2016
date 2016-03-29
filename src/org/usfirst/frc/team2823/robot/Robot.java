@@ -417,7 +417,7 @@ public class Robot extends IterativeRobot {
     	//motionDriveControl.setPID(SmartDashboard.getNumber("P"), SmartDashboard.getNumber("I"), SmartDashboard.getNumber("D"));
     	
     	if((Timer.getFPGATimestamp()-lastPiMessage) > 1){
-    		TalkToPi.rawCommand("HELLO");
+    		TalkToPi.rawCommand("RPM " + shooterTargetRPMs[currentTargetRPM]);
     		lastPiMessage = Timer.getFPGATimestamp();
     	}
     }
@@ -1032,13 +1032,10 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("F", 0.0);
     	SmartDashboard.putNumber("Arm Speed", 0.0);
     	SmartDashboard.putNumber("TestGyro Target (Inches)", 0);
-    	SmartDashboard.putNumber("GyroDrive Initial Power", 0.0);
-    	SmartDashboard.putNumber("GyroDrive Initial Time (ms)", 0.0);
     	SmartDashboard.putNumber("Arm Target", 0);
     	SmartDashboard.putNumber("Motion Plan Target", 0.0);
     	SmartDashboard.putNumber("TestDrive Power", 0.0);
     	SmartDashboard.putNumber("TargetShooterSpeed", 0.0);
-    	//SmartDashboard.putNumber("Servo Angle", TRIGGEROFFPOSITION);
     	SmartDashboard.putBoolean("Shoot in Auto?", true);
     		
     }
@@ -1053,6 +1050,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Left Encoder", lDriveEncoder.get());
     	SmartDashboard.putNumber("Right Encoder", rDriveEncoder.get());
     	SmartDashboard.putNumber("Left Encoder (Inches)", driveEncoderToInches(lDriveEncoder.get()));
+		SmartDashboard.putNumber("Right Encoder (Inches)", driveEncoderToInches(rDriveEncoder.get()));
     	SmartDashboard.putNumber("Arm Encoder", armEncoder.get());
     	SmartDashboard.putNumber("Shooter Counter", shooterCounter.get());
     	SmartDashboard.putNumber("ActualShooterSpeed", shooterCounter.getRateInRPMs());
