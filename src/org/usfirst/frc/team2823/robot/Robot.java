@@ -132,7 +132,6 @@ public class Robot extends IterativeRobot {
 	boolean clearedVisionAverage = false;
 	boolean atShotPosition = false;
 	boolean visionShotInProgress = false;
-	double shooterSpeed = 0.0;
 	double visionShotSpeed = 0.0;
 	int currentTargetRPM = 2;
 	double[] shooterTargetRPMs = {FARSPEED, MIDSPEED, CLOSESPEED};
@@ -309,7 +308,6 @@ public class Robot extends IterativeRobot {
     	}
     	
     	//disable shooter, intake and arm motors
-    	shooterSpeed = 0.0;
     	intakeSpeed = 0.0;
     	armSpeed = 0.0;
     	
@@ -387,7 +385,6 @@ public class Robot extends IterativeRobot {
     	
     	//drive motors using calculated speeds
     	intake.set(intakeSpeed);
-    	//shooter.set(shooterSpeed);
     	
     	goGyro();
     	//QUICKCLICK tank drive
@@ -411,7 +408,6 @@ public class Robot extends IterativeRobot {
     	 */
     	SmartDashboard.putString("ShooterTargetRPM", shooterTargetRPMs[currentTargetRPM] + "( " + shooterTargetNames[currentTargetRPM] + " )");
     	SmartDashboard.putString("Arm Setpoint", setpointNames[currentSetpoint] + "( " + setpoints[currentSetpoint]+ " )");
-    	SmartDashboard.putNumber("Speed", shooterSpeed);
     	SmartDashboard.putNumber("lDrive", lDrive1.getSpeed());
     	SmartDashboard.putNumber("rDrive", rDrive1.getSpeed());
     	SmartDashboard.putNumber("Gyro Rotation", gyro.getAngle());
@@ -547,14 +543,12 @@ public class Robot extends IterativeRobot {
     			shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
     			//shooterSpeedControl.setSetpointInRPMs(SmartDashboard.getNumber("TargetShooterSpeed"));
     			
-    			//tankDriveEnabled = false;
     			
     		} else if(!shootingWithVision) {
     			System.out.println("Shooter PID should be off");
     			shooterSpeedControl.reset();
         		shooterSpeedControl.closeLog();
     			
-        		//tankDriveEnabled = true;
         		
     		}
     	}
