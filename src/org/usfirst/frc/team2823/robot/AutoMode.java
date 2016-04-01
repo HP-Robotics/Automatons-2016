@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj.Timer;
 public class AutoMode {
 	Robot robot;
 	Timer m_tick;
+	double m_initTime = Timer.getFPGATimestamp();
 	int m_stage = 0;
 	int m_defense = 0;
 	
@@ -65,7 +66,7 @@ public class AutoMode {
 	}
 	
 	public void nextStage() {
-		System.out.printf("Stage Finished: %d\tTime: %f\tTotal Time:%f\n",m_stage,m_tick.get(),DriverStation.getInstance().getMatchTime());
+		System.out.printf("Stage Finished: %d\tTime: %f\tTotal Time:%f\n",m_stage,m_tick.get(),Math.abs(Timer.getFPGATimestamp() - m_initTime) - m_initTime);
 		m_tick.reset();
 		m_stage++;
 		

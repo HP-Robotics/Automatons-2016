@@ -10,7 +10,7 @@ public class MainAuto extends AutoMode {
 
 	@Override
 	public void autoInit() {
-		double[] timeouts = {0.1, 0.1, 15.0, 15.0, 1.5, 3.0, 1.5, 5.0, 3.0, 2.0, 2.0, 1.0, 1.0, 15.0};
+		double[] timeouts = {0.1, 0.1, 15.0, 15.0, 1.5, 3.0, 1.5, 5.0, 2.0, 2.0, 2.0, 1.0, 1.0, 15.0};
 		setStageTimeouts(timeouts);
 		robot.gyroReset();
 		startAuto();
@@ -154,7 +154,7 @@ public class MainAuto extends AutoMode {
 			robot.lDriveEncoder.reset();
 			robot.rDriveEncoder.reset();
 			
-			int target = 107;
+			int target = 147;
 			
 			//drive with gyro motion plan most of the way to the wall
 			robot.gyroDriveControl.enableLog("autoGyroDrivePID.csv");
@@ -216,7 +216,7 @@ public class MainAuto extends AutoMode {
 			//drive with gyro motion plan most of the way to the wall
 			robot.motionDriveControl.enableLog("autoDriveLeft.csv");
 			
-			robot.motionDriveControl.configureGoal(target, Robot.MAXVELOCITY/2, Robot.MAXACCELERATION/4);
+			robot.motionDriveControl.configureGoal(target, Robot.MAXVELOCITY/1.5, Robot.MAXACCELERATION/3);
 			robot.motionDriveControl.enable();
 			
 			stageData[m_stage].entered = true;
@@ -261,7 +261,7 @@ public class MainAuto extends AutoMode {
 			//drive with gyro motion plan most of the way to the wall
 			robot.gyroDriveControl.enableLog("autoGyroDriveToWall.csv");
 			
-			robot.gyroDriveControl.configureGoal(125, Robot.MAXVELOCITY/2, Robot.MAXACCELERATION/4);
+			robot.gyroDriveControl.configureGoal(85, Robot.MAXVELOCITY/1.5, Robot.MAXACCELERATION/3);
 			robot.gyroDriveControl.enable();
 			
 			stageData[m_stage].entered = true;
@@ -283,7 +283,7 @@ public class MainAuto extends AutoMode {
 		}
 		
 		//drive the rest of the way to the wall (relying on timeout to stop driving)
-		robot.goNoDrifting(0.2, -robot.gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.1, 0.5);
+		robot.goNoDrifting(0.25, -robot.gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.1, 0.5);
 	}
 	
 	public void raiseArm() {
