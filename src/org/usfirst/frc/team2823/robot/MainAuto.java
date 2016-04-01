@@ -10,7 +10,7 @@ public class MainAuto extends AutoMode {
 
 	@Override
 	public void autoInit() {
-		double[] timeouts = {0.5, 15.0, 15.0, 1.5, 3.0, 1.5, 5.0, 3.0, 2.0, 2.0, 1.0, 1.0, 15.0};
+		double[] timeouts = {0.1, 0.1, 15.0, 15.0, 1.5, 3.0, 1.5, 5.0, 3.0, 2.0, 2.0, 1.0, 1.0, 15.0};
 		setStageTimeouts(timeouts);
 		robot.gyroReset();
 		startAuto();
@@ -29,9 +29,12 @@ public class MainAuto extends AutoMode {
 			lowerArm();
 			break;
 		case 2:
-			driveOverDefense();
+			driveToDefense();
 			break;
 		case 3:
+			driveOverDefense();
+			break;
+		case 4:
 			//if the robot isn't going to shoot, stop running
 			if(!SmartDashboard.getBoolean("Shoot in Auto?")) {
 				m_stage = stageData.length;
@@ -44,43 +47,43 @@ public class MainAuto extends AutoMode {
 				nextStage();
 			}
 			break;
-		case 4:
+		case 5:
 			if(m_defense > 2) {
 				driveLeft();
 			} else {
 				nextStage();
 			}
 			break;
-		case 5:
+		case 6:
 			if(m_defense > 2) {
 				turnRight();
 			} else {
 				nextStage();
 			}
 			break;
-		case 6:
+		case 7:
 			if(m_defense > 2) {
 				finishDrivingToWall();
 			} else {
 				nextStage();
 			}
 			break;
-		case 7:
+		case 8:
 			alignWithWall();
 			break;
-		case 8:
+		case 9:
 			raiseArm();
 			break;
-		case 9:
+		case 10:
 			waitForFlywheelToSpinUp();
 			break;
-		case 10:
+		case 11:
 			turnOnTrigger();
 			break;
-		case 11:
+		case 12:
 			turnOffTrigger();
 			break;
-		case 12:
+		case 13:
 			lowerArm();
 		}
 	}
@@ -118,12 +121,30 @@ public class MainAuto extends AutoMode {
 			
 			stageData[m_stage].entered = true;
 		}
-		
-		//move on to the next stage when the arm is within 100 encoder ticks
-		if(Math.abs(robot.armEncoder.get() - robot.armControl.getSetpoint()) < 100) {
-			nextStage();
+	}
+	
+	public void driveToDefense() {
+		//run entry code
+		if(!stageData[m_stage].entered) {
+			
+			robot.lDriveEncoder.reset();
+			robot.rDriveEncoder.reset();
+			
+			int target = 43;
+			
+			//drive with gyro motion plan to the defense
+			robot.gyroDriveControl.enableLog("autoGyroDrivePID.csv");
+			
+			robot.gyroDriveControl.configureGoal(target, Robot.MAXVELOCITY/2, Robot.MAXACCELERATION/4);
+			robot.gyroDriveControl.enable();
+			
+			stageData[m_stage].entered = true;
 		}
 		
+		//move on to the next stage when the motion plan is finished and the arm is lowered
+		if(Math.abs(robot.armEncoder.get() - robot.armControl.getSetpoint()) < 100 && robot.gyroDriveControl.isPlanFinished()) {
+			nextStage();
+		}
 	}
 	
 	public void driveOverDefense() {
@@ -133,7 +154,7 @@ public class MainAuto extends AutoMode {
 			robot.lDriveEncoder.reset();
 			robot.rDriveEncoder.reset();
 			
-			int target = 150;
+			int target = 107;
 			
 			//drive with gyro motion plan most of the way to the wall
 			robot.gyroDriveControl.enableLog("autoGyroDrivePID.csv");
