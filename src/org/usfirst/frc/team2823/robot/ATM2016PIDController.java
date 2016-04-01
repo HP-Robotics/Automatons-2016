@@ -38,6 +38,8 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   private static int instances = 0;
   private static final double OUTPUT_CLAMP_UP = -0.6;
   private static final double OUTPUT_CLAMP_DOWN = 0.6;
+  private static final double OUTPUT_CLAMP_HOLD = -0.1;
+  private static final int OUTPUT_CLAMP_HOLD_THRESHOLD = 10;
   private double m_P; // factor for "proportional" control
   private double m_I; // factor for "integral" control
   private double m_D; // factor for "derivative" control
@@ -288,23 +290,18 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   
   //QUICKCLICK safeArm
   private double safeArm(double output){
-	  /*if(robot.upperLimitSwitch.get() && robot.armControl.getSetpoint() < 200) {
-		  return 0.0;
-	  }*/
-		
-		if(robot.armEncoder.get() < Robot.MIDSETPOINT && output > OUTPUT_CLAMP_DOWN) {
+	  	
+		if(output > OUTPUT_CLAMP_DOWN) {
 			return OUTPUT_CLAMP_DOWN;
-			
-		} else if(robot.armEncoder.get() > Robot.MIDSETPOINT && output > OUTPUT_CLAMP_DOWN){
-			return OUTPUT_CLAMP_DOWN;
-		}else if(output < OUTPUT_CLAMP_UP) {
+		}else if (output < OUTPUT_CLAMP_UP) {
 			return OUTPUT_CLAMP_UP;
-			
-		} else if(output > OUTPUT_CLAMP_DOWN) {
-			return OUTPUT_CLAMP_DOWN;
-			
 		}
-	
+		
+		//clamp the output at -0.1 when the arm is raised and driving up
+		if(robot.armEncoder.get() < OUTPUT_CLAMP_HOLD_THRESHOLD && output < OUTPUT_CLAMP_HOLD){
+			return OUTPUT_CLAMP_HOLD;
+		}
+		
 		return output;
   }
   
