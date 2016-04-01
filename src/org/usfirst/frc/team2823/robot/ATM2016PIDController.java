@@ -323,6 +323,11 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 		  m_invertMultiplier = 1.0;
 	  }
 	  
+	  //TODO create a class to implement PIDOutput so this can work
+	  /*
+	  m_pidOutput.setDirection(m_invertMultiplier);
+	  */
+	  
       double midpoint = goal / 2;
       
       m_maxAcceleration = max_a;

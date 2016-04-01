@@ -32,7 +32,7 @@ public class Robot extends IterativeRobot {
 	//this should be 40 for the old arm
 	static final int CALIBRATIONOFFSET = 0;
 	
-	static final int SHOOTSETPOINT = (0 + CALIBRATIONOFFSET);
+	static final int SHOOTSETPOINT = (-25 + CALIBRATIONOFFSET);
 	static final int HIGHTRAVELSETPOINT = (600 + CALIBRATIONOFFSET);
 	static final int MIDSETPOINT = (1800 + CALIBRATIONOFFSET);
 	static final int LOWTRAVELSETPOINT = (2280 + CALIBRATIONOFFSET);
@@ -169,6 +169,7 @@ public class Robot extends IterativeRobot {
 	ToggleSwitch portcullisDownState;
 	
 	double portcullisInitTime = 0.0;
+	double portcullisArmSpeed = 0.0;
 	double portcullisDirection = PORTCULLIS_UP;
 	
 	/*declare auto-related objects*/
@@ -289,7 +290,7 @@ public class Robot extends IterativeRobot {
     	armControl.enable();
     	
     	//begin driving portcullis arm into the robot
-    	portcullisArm.set(PORTCULLIS_LOW_POWER * PORTCULLIS_UP);
+    	portcullisArmSpeed = PORTCULLIS_LOW_POWER * PORTCULLIS_UP;
     	
     	((AutoMode) autoChooser.getSelected()).autoInit();
     	
@@ -317,7 +318,7 @@ public class Robot extends IterativeRobot {
     	armSpeed = 0.0;
     	
     	//begin driving portcullis arm into the robot
-    	portcullisArm.set(PORTCULLIS_LOW_POWER * PORTCULLIS_UP);
+    	portcullisArmSpeed = PORTCULLIS_LOW_POWER * PORTCULLIS_UP;
     	
     	//reset encoders
     	lDriveEncoder.reset();
@@ -388,6 +389,7 @@ public class Robot extends IterativeRobot {
     	
     	//drive motors using calculated speeds
     	intake.set(intakeSpeed);
+    	portcullisArm.set(portcullisArmSpeed);
     	
     	goGyro();
     	//QUICKCLICK tank drive
@@ -499,12 +501,12 @@ public class Robot extends IterativeRobot {
     
     public void setPtcArmSpeed() {
     	if(portcullisUpState.updateState(stick2.getRawButton(LBUMPER))) {
-    		portcullisArm.set(PORTCULLIS_HIGH_POWER);
+    		portcullisArmSpeed = PORTCULLIS_HIGH_POWER;
     		portcullisDirection = PORTCULLIS_UP;
     		portcullisInitTime = Timer.getFPGATimestamp();
     		
     	} else if (portcullisDownState.updateState(stick2.getRawButton(LTRIGGER))) {
-    		portcullisArm.set(-PORTCULLIS_HIGH_POWER);
+    		portcullisArmSpeed = -PORTCULLIS_HIGH_POWER;
     		portcullisDirection = PORTCULLIS_DOWN;
     		portcullisInitTime = Timer.getFPGATimestamp();
     		
@@ -512,7 +514,7 @@ public class Robot extends IterativeRobot {
     	
     	//lower the portcullis speed after 3 seconds have passed to prevent motor damage
     	if(Math.abs(Timer.getFPGATimestamp() - portcullisInitTime) > 3) {
-    		portcullisArm.set(PORTCULLIS_LOW_POWER * portcullisDirection);
+    		portcullisArmSpeed = PORTCULLIS_LOW_POWER * portcullisDirection;
     		
     	}
     	
@@ -787,12 +789,17 @@ public class Robot extends IterativeRobot {
     }
     
     public class GyroDriveOutput implements PIDOutput {
+    	double m_direction = 1.0;
     	
 		@Override
 		public void pidWrite(double output) {
 			SmartDashboard.putNumber("Gyro Drive PIDOutput", output);
-			goNoDrifting(output, -gyro.getAngle() * k_ANGLE, 0.1, 0.5);
+			goNoDrifting(output, gyro.getAngle() * k_ANGLE * -m_direction, 0.1, 0.5);
 			
+		}
+		
+		public void setDirection(double direction) {
+			m_direction = direction;
 		}
 		
 	}
