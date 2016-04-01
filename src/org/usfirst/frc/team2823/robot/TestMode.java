@@ -17,6 +17,8 @@ public class TestMode {
 		robot.lDriveEncoder.reset();
 		robot.rDriveEncoder.reset();
 		
+		robot.shooterSpeedControl.reset();
+		
 		//robot.trigger.setAngle(SmartDashboard.getNumber("Servo Angle"));
 		
 		//robot.armControl.setSetpoint(Robot.HIGHTRAVELSETPOINT);
@@ -31,6 +33,10 @@ public class TestMode {
 		robot.gyroDriveControl.enable();*/
 		
 		//robot.driveRobot(0.5, 0.5);
+		
+    	//begin driving portcullis arm into the robot
+    	robot.portcullisArm.set(Robot.PORTCULLIS_LOW_POWER * Robot.PORTCULLIS_UP);
+    	
 		initTime = Timer.getFPGATimestamp();
 	}
 	

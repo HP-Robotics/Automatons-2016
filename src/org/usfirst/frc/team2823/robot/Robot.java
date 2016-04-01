@@ -57,6 +57,11 @@ public class Robot extends IterativeRobot {
 	static final int TRIGGEROFFPOSITION = 95;
 	static final int TRIGGERONPOSITION = 65;
 	
+	static final double PORTCULLIS_LOW_POWER = 0.1;
+	static final double PORTCULLIS_HIGH_POWER = 0.3;
+	static final double PORTCULLIS_UP = 1.0;
+	static final double PORTCULLIS_DOWN = -1.0;
+	
 	static final int XBUTTON = 1;
 	static final int ABUTTON = 2;
 	static final int BBUTTON = 3;
@@ -157,11 +162,14 @@ public class Robot extends IterativeRobot {
 	
 	boolean firingInProgress = false;
 	
-	/*declare portcullis-thingy related objects and variables*/
+	/*declare portcullis arm related objects and variables*/
 	CANTalon portcullisArm;
-	ToggleSwitch portcullisState;
 	
-	double portcullisInitTime = 0;
+	ToggleSwitch portcullisUpState;
+	ToggleSwitch portcullisDownState;
+	
+	double portcullisInitTime = 0.0;
+	double portcullisDirection = PORTCULLIS_UP;
 	
 	/*declare auto-related objects*/
 	SendableChooser autoChooser;
@@ -259,10 +267,12 @@ public class Robot extends IterativeRobot {
     	stick2 = new Joystick(1);
     	
     	portcullisArm = new CANTalon(1);
-    	portcullisState = new ToggleSwitch();
+    	portcullisUpState = new ToggleSwitch();
+    	portcullisDownState = new ToggleSwitch();
     	
     }
     
+    //QUICKCLICK autonomousInit
     public void autonomousInit() {
     	//try to connect to Pi
     	if(!piIsStarted) {
@@ -277,6 +287,9 @@ public class Robot extends IterativeRobot {
     	
     	armControl.setSetpoint(0);
     	armControl.enable();
+    	
+    	//begin driving portcullis arm into the robot
+    	portcullisArm.set(PORTCULLIS_LOW_POWER * PORTCULLIS_UP);
     	
     	((AutoMode) autoChooser.getSelected()).autoInit();
     	
@@ -299,9 +312,12 @@ public class Robot extends IterativeRobot {
     		piIsStarted = true;
     	}
     	
-    	//disable shooter, intake and arm motors
+    	//disable intake and arm motors
     	intakeSpeed = 0.0;
     	armSpeed = 0.0;
+    	
+    	//begin driving portcullis arm into the robot
+    	portcullisArm.set(PORTCULLIS_LOW_POWER * PORTCULLIS_UP);
     	
     	//reset encoders
     	lDriveEncoder.reset();
@@ -313,7 +329,6 @@ public class Robot extends IterativeRobot {
     	
     	//lock arm to current setpoint
     	armControl.enable();
-    	
     	
     	//reset gyro
     	gyroReset();
@@ -351,11 +366,6 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
-    	//calculate motor speeds
-    	setIntakeSpeed();
-    	setShooterSpeed();
-    	setPtcArmSpeed();
-    	
     	//if manual drive of the arm is allowed, set the arm speed
     	if(emergencyMode) {
     		setArmSpeed();
@@ -363,6 +373,11 @@ public class Robot extends IterativeRobot {
     	} else {
     		setArmSetpoint();
     	}
+    	
+    	//calculate motor speeds
+    	setIntakeSpeed();
+    	setShooterSpeed();
+    	setPtcArmSpeed();
     	
     	//calculate drive speeds
     	leftSpeed = (Math.abs(stick1.getRawAxis(LEFTAXIS)) < DRIVETHRESHOLD ? 0.0 : stick1.getRawAxis(LEFTAXIS));
@@ -396,12 +411,14 @@ public class Robot extends IterativeRobot {
     	} else {
     		a = new String[5];
     		a[0] = "BAD";
+    		a[1] = "0";
     		a[2] = "0";
     		a[3] = "0";
     		a[4] = "0";
     	}
     	
     	SmartDashboard.putString("Is vision good", a[0]);
+    	SmartDashboard.putString("Camera-to-goal angle", a[1]);
     	SmartDashboard.putString("Camera-to-goal distance", a[3]);
     	SmartDashboard.putString("Camera-to-left-side distance", a[2]);
     	SmartDashboard.putString("Camera-to-right-side distance", a[4]);
@@ -481,24 +498,25 @@ public class Robot extends IterativeRobot {
     }
     
     public void setPtcArmSpeed() {
-    		
-    	if(portcullisState.updateState(stick2.getRawButton(LTRIGGER))){
+    	if(portcullisUpState.updateState(stick2.getRawButton(LBUMPER))) {
+    		portcullisArm.set(PORTCULLIS_HIGH_POWER);
+    		portcullisDirection = PORTCULLIS_UP;
     		portcullisInitTime = Timer.getFPGATimestamp();
+    		
+    	} else if (portcullisDownState.updateState(stick2.getRawButton(LTRIGGER))) {
+    		portcullisArm.set(-PORTCULLIS_HIGH_POWER);
+    		portcullisDirection = PORTCULLIS_DOWN;
+    		portcullisInitTime = Timer.getFPGATimestamp();
+    		
     	}
     	
-    	if (stick2.getRawButton(LBUMPER)){
-    		portcullisArm.set(0.3);
+    	//lower the portcullis speed after 3 seconds have passed to prevent motor damage
+    	if(Math.abs(Timer.getFPGATimestamp() - portcullisInitTime) > 3) {
+    		portcullisArm.set(PORTCULLIS_LOW_POWER * portcullisDirection);
+    		
     	}
-    	else if (stick2.getRawButton(LTRIGGER)){
-    		double currentTime = Timer.getFPGATimestamp();
-    		if ((currentTime - portcullisInitTime) < 2) {
-    			portcullisArm.set(-0.3);
-    		}else {
-    			portcullisArm.set(-0.1);
-    		}
-    	}else {
-    		portcullisArm.set(0.0);
-    	}
+    	
+    	
     }
     
     public void setShooterSpeed() {
@@ -543,12 +561,14 @@ public class Robot extends IterativeRobot {
     			lastPiMessage = Timer.getFPGATimestamp();
     			
     			initFrameCaptureTime = Timer.getFPGATimestamp();
+    			System.out.println("INIT CAPTURE TIME: " + initFrameCaptureTime);
     		}
     		
     		if(Math.abs(Timer.getFPGATimestamp() - initFrameCaptureTime) > 0.2 && shootingWithVision && !capturedFirstFrame) {
     			//wait for 200ms before continuing
     			
     			String piData = pi.getLast();
+    			System.out.println("INIT PI DATA: " + piData);
     	    	if(piData == null){
     	    		return;
     	    	}
@@ -574,6 +594,7 @@ public class Robot extends IterativeRobot {
         			double preVisionShotSpeed = (-0.002342381 * Math.pow(cameraToGoalDistance, 3)) + (0.83275224 * Math.pow(cameraToGoalDistance, 2)) +
         									 (-89.22806 * cameraToGoalDistance) + 6549.93;
         			
+        			System.out.println("SHOT SPEED: " + preVisionShotSpeed);
         			//spin up shooter wheel to pre-calculated RPM
         			shooterSpeedControl.reset();
         			shooterSpeedControl.setSetpointInRPMs(preVisionShotSpeed);
@@ -582,16 +603,16 @@ public class Robot extends IterativeRobot {
     				//pre-calculate motion plan movement
     				preTargetPosition = (cameraToLeftEdge - ((cameraToLeftEdge - cameraToRightEdge) / 2));
     				
-    				System.out.println("PRE-TARGET " + preTargetPosition);
+    				System.out.println("PRE-TURN TARGET: " + preTargetPosition);
     				
     				//check if robot is within an acceptable angle range, and set wait times accordingly
     				setStopTime = true;
     				
     				gyroReset();
-    				
+    				System.out.println("GYRO ANGLE: " + gyro.getAngle());
     				if(Math.abs(cameraToGoalAngle) > THRESHOLD_VISION_ANGLE) {
     					turnControl.setSetpoint(cameraToGoalAngle);
-    					System.err.println("CAMERA ANGLE " + cameraToGoalAngle);
+    					System.err.println("CAMERA-TO-GOAL ANGLE " + cameraToGoalAngle);
     					turnControl.enable();
     					
     					stopTime = Timer.getFPGATimestamp() + 1.3;
@@ -617,10 +638,11 @@ public class Robot extends IterativeRobot {
     			lDriveEncoder.reset();
     			rDriveEncoder.reset();
     			
+    			double target = (preTargetPosition / Math.cos(Math.toRadians(gyro.getAngle())));
+    			System.out.println("POST-TURN TARGET: " + target);
 				//TODO if the target is less than a threshold value, don't try to move
-				motionDriveControl.configureGoal((preTargetPosition / Math.cos(Math.toRadians(gyro.getAngle()))), Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
-				System.err.println("TARGET " + (preTargetPosition));
-				motionDriveControl.enable();
+				gyroDriveControl.configureGoal(target, Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
+				gyroDriveControl.enable();
     			
     		}
     		
@@ -664,7 +686,7 @@ public class Robot extends IterativeRobot {
 				motionDriveControl.enable();
 			}*/
     		
-    		if(motionDriveControl.isPlanFinished() && /*calculatedShotDistance*/ clearedVisionAverage && !atShotPosition) {
+    		if(gyroDriveControl.isPlanFinished() && /*calculatedShotDistance*/ clearedVisionAverage && !atShotPosition) {
     			atShotPosition = true;
     			
     			//raise the arm
@@ -676,6 +698,7 @@ public class Robot extends IterativeRobot {
     		if((armEncoder.get() < (SHOOTSETPOINT + OFFSET)) && shooterIsAtSpeed(100) && atShotPosition && !visionShotInProgress) {
     			visionShotInProgress = true;
     			
+    			System.out.println("SHOOTING!");
     			//try to shoot if the arm is above the high travel setpoint and the shooter is at speed
     			trigger.setAngle(TRIGGERONPOSITION);
     		}
@@ -701,7 +724,7 @@ public class Robot extends IterativeRobot {
     			enableArmPid();
     			
     			shooterSpeedControl.reset();
-    			motionDriveControl.reset();
+    			gyroDriveControl.reset();
 				turnControl.reset();
     		}
     	}
@@ -902,11 +925,6 @@ public class Robot extends IterativeRobot {
     }
     public void goGyro (){
     	if(armEncoder.get() < (MIDSETPOINT - OFFSET)) {
-    		if (gyroDrive) {
-    			turnControl.reset();
-    			//turnControl.closeLog();
-    			turnControl.reset();
-    		}
     		gyroDrive = false;
     		return;
     	}
@@ -932,13 +950,7 @@ public class Robot extends IterativeRobot {
     		
     	} else if(gyroDrive) {
     		gyroDrive = false;
-    
-    		//turnControl.closeLog();
-    		turnControl.reset();
     	}
-    	
-    	
-
     }
     
     //QUICKCLICK creations
