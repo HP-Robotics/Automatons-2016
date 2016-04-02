@@ -36,7 +36,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 
   public static final double kDefaultPeriod = .05;
   private static int instances = 0;
-  private static final double OUTPUT_CLAMP_UP = -0.6;
+  private static final double OUTPUT_CLAMP_UP = -0.8;
   private static final double OUTPUT_CLAMP_DOWN = 0.6;
   private static final double OUTPUT_CLAMP_HOLD = -0.1;
   private static final int OUTPUT_CLAMP_HOLD_THRESHOLD = 10;

@@ -51,6 +51,7 @@ public class Robot extends IterativeRobot {
 	
 	static final double LEFTGOALDISTANCE = 13.25;
 	static final double CAMERAANGLE = 38;
+	static final double VISION_DRIVE_OFFSET = -6;
 	static final double THRESHOLD_VISION_ANGLE = 10;
 	static final double VISION_WAIT_TIME = 0.5;
 	
@@ -58,7 +59,7 @@ public class Robot extends IterativeRobot {
 	static final int TRIGGERONPOSITION = 65;
 	
 	static final double PORTCULLIS_LOW_POWER = 0.1;
-	static final double PORTCULLIS_HIGH_POWER = 0.3;
+	static final double PORTCULLIS_HIGH_POWER = 0.5;
 	static final double PORTCULLIS_UP = 1.0;
 	static final double PORTCULLIS_DOWN = -1.0;
 	
@@ -95,6 +96,9 @@ public class Robot extends IterativeRobot {
 	ATM2016PIDController turnControl;
 	ATM2016PIDController gyroDriveControl;
 	ATM2016PIDController motionDriveControl;
+	ATM2016PIDController leftDriveControl;
+	ATM2016PIDController rightDriveControl;
+	
 	
 	double leftSpeed;
 	double rightSpeed;
@@ -541,6 +545,8 @@ public class Robot extends IterativeRobot {
         		
     		}
     	}
+    	
+    	//manual control of shooter RPM
     	if(RPMState.updateState(stick1.getRawButton(YBUTTON)||stick2.getRawButton(YBUTTON))){
     		currentTargetRPM = (currentTargetRPM + 1) % shooterTargetRPMs.length;
     		shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
@@ -604,7 +610,8 @@ public class Robot extends IterativeRobot {
     				
     				//pre-calculate motion plan movement
     				preTargetPosition = (cameraToLeftEdge - ((cameraToLeftEdge - cameraToRightEdge) / 2));
-    				
+        			//preTargetPosition = (cameraToGoalDistance * Math.cos(Math.toRadians(90 - cameraToGoalAngle)));
+        			
     				System.out.println("PRE-TURN TARGET: " + preTargetPosition);
     				
     				//check if robot is within an acceptable angle range, and set wait times accordingly
@@ -640,11 +647,16 @@ public class Robot extends IterativeRobot {
     			lDriveEncoder.reset();
     			rDriveEncoder.reset();
     			
-    			double target = (preTargetPosition / Math.cos(Math.toRadians(gyro.getAngle())));
+    			//double target = (preTargetPosition / Math.cos(Math.toRadians(gyro.getAngle())));
+    			double target = preTargetPosition * Math.cos(Math.toRadians(gyro.getAngle())) + cameraToGoalDistance * Math.sin(Math.toRadians(gyro.getAngle()));
+    			
     			System.out.println("POST-TURN TARGET: " + target);
 				//TODO if the target is less than a threshold value, don't try to move
-				gyroDriveControl.configureGoal(target, Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
-				gyroDriveControl.enable();
+				leftDriveControl.configureGoal(target + VISION_DRIVE_OFFSET, Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
+				rightDriveControl.configureGoal(target + VISION_DRIVE_OFFSET, Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
+				leftDriveControl.enable();
+				rightDriveControl.enable();
+
     			
     		}
     		
@@ -688,7 +700,7 @@ public class Robot extends IterativeRobot {
 				motionDriveControl.enable();
 			}*/
     		
-    		if(gyroDriveControl.isPlanFinished() && /*calculatedShotDistance*/ clearedVisionAverage && !atShotPosition) {
+    		if(leftDriveControl.isPlanFinished() && rightDriveControl.isPlanFinished() && /*calculatedShotDistance*/ clearedVisionAverage && !atShotPosition) {
     			atShotPosition = true;
     			
     			//raise the arm
@@ -726,7 +738,8 @@ public class Robot extends IterativeRobot {
     			enableArmPid();
     			
     			shooterSpeedControl.reset();
-    			gyroDriveControl.reset();
+    			leftDriveControl.reset();
+    			rightDriveControl.reset();
 				turnControl.reset();
     		}
     	}
@@ -804,7 +817,6 @@ public class Robot extends IterativeRobot {
 		
 	}
     
-    //TODO make this work for just one side
     public class motionDriveOutput implements PIDOutput {
     	
 		@Override
@@ -817,6 +829,22 @@ public class Robot extends IterativeRobot {
 		}
 		
 	}
+    
+    public class leftDriveOutput implements PIDOutput {
+    	@Override
+    	public void pidWrite(double output){
+    		lDrive1.set(output);
+    		lDrive2.set(output);
+    	}
+    }
+    
+    public class rightDriveOutput implements PIDOutput {
+    	@Override
+    	public void pidWrite(double output){
+    		rDrive1.set(-output);
+    		rDrive2.set(-output);
+    	}
+    }
     
     public class GyroTurnOutput implements PIDOutput {
     	
@@ -852,6 +880,31 @@ public class Robot extends IterativeRobot {
 		@Override
 		public double pidGet() {
 			return driveEncoderToInches((leftSource.pidGet() + rightSource.pidGet()) / 2);
+		}
+		
+		@Override
+		public void setPIDSourceType(PIDSourceType pidSource) {
+			// TODO Auto-generated method stub
+			
+		}
+		
+		@Override
+		public PIDSourceType getPIDSourceType() {
+			// TODO Auto-generated method stub
+			return PIDSourceType.kDisplacement;
+		}
+	}
+    
+    public class DriveEncoder implements PIDSource {
+		PIDSource source;
+		
+		public DriveEncoder(PIDSource s) {
+			source = s;
+		}
+		
+		@Override
+		public double pidGet() {
+			return driveEncoderToInches(source.pidGet());
 		}
 		
 		@Override
@@ -991,9 +1044,13 @@ public class Robot extends IterativeRobot {
     	//for shadow robot
     	gyroDriveControl = new ATM2016PIDController  (0.07, 0.00015, 0.2, new AverageEncoder(lDriveEncoder, rDriveEncoder), new GyroDriveOutput(), 0.01);
     	motionDriveControl = new ATM2016PIDController(0.07, 0.00025, 0.2, new AverageEncoder(lDriveEncoder, rDriveEncoder), new motionDriveOutput(), 0.01);
+    	leftDriveControl = new ATM2016PIDController(0.07, 0.00025, 0.2, new DriveEncoder(lDriveEncoder), new leftDriveOutput(), 0.01);
+    	rightDriveControl = new ATM2016PIDController(0.07, 0.00025, 0.2, new DriveEncoder(rDriveEncoder), new rightDriveOutput(), 0.01);
     	
-    	motionDriveControl.setKaKv(0.0027, 0.0079);
     	//motionDriveControl.setKaKv(0.002, 0.01087);
+    	motionDriveControl.setKaKv(0.0027, 0.0079);
+    	leftDriveControl.setKaKv(0.0027, 0.0079);
+    	rightDriveControl.setKaKv(0.0027, 0.0079);
     	gyroDriveControl.setKaKv(0.002, 0.01087);
     	
     	emergencyState = new ToggleSwitch();

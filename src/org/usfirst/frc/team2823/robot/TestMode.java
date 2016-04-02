@@ -64,9 +64,15 @@ public class TestMode {
 				robot.tankDriveEnabled = false;
 				robot.slowDriveEnabled = false;
 
-				robot.motionDriveControl.enableLog("motionControlPID.csv");
-				robot.motionDriveControl.configureGoal(SmartDashboard.getNumber("Motion Plan Target"), Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
-				robot.motionDriveControl.enable();
+				robot.leftDriveControl.enableLog("leftControlPID.csv");
+				robot.rightDriveControl.enableLog("rightControlPID.csv");
+				//robot.leftDriveControl.configureGoal(SmartDashboard.getNumber("Motion Plan Target"), Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
+				robot.leftDriveControl.configureGoal(SmartDashboard.getNumber("Motion Plan Target"), Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
+				//robot.rightDriveControl.configureGoal(SmartDashboard.getNumber("Motion Plan Target"), Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
+				robot.rightDriveControl.configureGoal(SmartDashboard.getNumber("Motion Plan Target")*0.95, (Robot.MAXVELOCITY/3)*(0.95), (Robot.MAXACCELERATION/5)*(0.95));
+				robot.leftDriveControl.enable();
+				robot.rightDriveControl.enable();
+
 			}
 
 		} else if(robot.motionDriveEnabled) {
@@ -74,8 +80,10 @@ public class TestMode {
 			robot.tankDriveEnabled = true;
 			robot.slowDriveEnabled = false;
 
-			robot.motionDriveControl.disable();
-			robot.motionDriveControl.closeLog();
+			robot.leftDriveControl.disable();
+			robot.rightDriveControl.disable();
+			robot.leftDriveControl.closeLog();
+			robot.rightDriveControl.closeLog();
 		}
     	
 		if(robot.stick1.getRawButton(Robot.BBUTTON)){
