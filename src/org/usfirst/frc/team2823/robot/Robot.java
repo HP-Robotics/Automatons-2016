@@ -546,13 +546,48 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
+    	//automatic control of shooter RPM if the vision code is running and can see a goal
+    	String piData = pi.getLast();
+    	if(!(piData == null)) {
+    		if(piData.contains("GOOD")) {
+			//get data from Pi
+			String[] piDataArray = piData.split(" ");
+			
+			cameraToGoalAngle = Double.parseDouble(piDataArray[1]);
+			cameraToLeftEdge = Double.parseDouble(piDataArray[2]);
+			cameraToGoalDistance = Double.parseDouble(piDataArray[3]);
+			cameraToRightEdge = Double.parseDouble(piDataArray[4]);
+			
+			//pre-calculate shooter RPM based on distance to wall
+			double visionShotSpeed = (-0.002342381 * Math.pow(cameraToGoalDistance, 3)) + (0.83275224 * Math.pow(cameraToGoalDistance, 2)) +
+									 (-89.22806 * cameraToGoalDistance) + 6549.93;
+			
+			shooterSpeedControl.setSetpointInRPMs(visionShotSpeed);
+			
+	    	TalkToPi.rawCommand("RPM " + visionShotSpeed);
+			lastPiMessage = Timer.getFPGATimestamp();
+    		} else {
+    			//if the goal isn't visible, spin to the close shot speed
+    			shooterSpeedControl.setSetpointInRPMs(CLOSESPEED);
+    			
+    			TalkToPi.rawCommand("RPM " + CLOSESPEED);
+    			lastPiMessage = Timer.getFPGATimestamp();
+    		}
+    	} else {
+    		//if the goal isn't vision, spin to the close shot speed
+    		shooterSpeedControl.setSetpointInRPMs(CLOSESPEED);
+    		
+    		TalkToPi.rawCommand("RPM " + CLOSESPEED);
+			lastPiMessage = Timer.getFPGATimestamp();
+    	}
+    	
     	//manual control of shooter RPM
-    	if(RPMState.updateState(stick1.getRawButton(YBUTTON)||stick2.getRawButton(YBUTTON))){
+    	/*if(RPMState.updateState(stick1.getRawButton(YBUTTON)||stick2.getRawButton(YBUTTON))){
     		currentTargetRPM = (currentTargetRPM + 1) % shooterTargetRPMs.length;
     		shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
     		TalkToPi.rawCommand("RPM " + shooterTargetRPMs[currentTargetRPM]);
     		lastPiMessage = Timer.getFPGATimestamp();
-    	}
+    	}*/
     }
     
     //QUICKCLICK shootWithMagic
