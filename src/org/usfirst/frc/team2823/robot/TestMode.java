@@ -8,8 +8,8 @@ public class TestMode {
 	double initTime;
 	boolean testPIDEnabled = false;
 	
-	public TestMode(Robot newRobot) {
-		robot = newRobot;
+	public TestMode(Robot robot2) {
+		robot = robot2;
 	}
 	
 	public void testInit() {

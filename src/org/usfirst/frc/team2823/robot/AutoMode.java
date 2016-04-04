@@ -19,8 +19,8 @@ public class AutoMode {
 	}
 	
 	
-	public AutoMode(Robot myBot, int defense) {
-		robot = myBot;
+	public AutoMode(Robot robot2, int defense) {
+		robot = robot2;
 		m_defense = defense;
 	}
 	

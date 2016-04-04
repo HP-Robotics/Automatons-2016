@@ -4,8 +4,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class MainAuto extends AutoMode {
 	
-	public MainAuto(Robot myBot, int defense) {
-		super(myBot, defense);
+	public MainAuto(Robot robot, int defense) {
+		super(robot, defense);
 	}
 
 	@Override

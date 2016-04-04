@@ -305,8 +305,8 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
 		return output;
   }
   
-  public void setRobot (Robot myRobot){
-	  robot = myRobot;
+  public void setRobot (Robot robot2){
+	  robot = robot2;
 	  m_safeArm = true;
   }
   
