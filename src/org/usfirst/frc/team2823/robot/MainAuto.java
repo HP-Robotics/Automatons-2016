@@ -12,7 +12,7 @@ public class MainAuto extends AutoMode {
 
 	@Override
 	public void autoInit() {
-		double[] timeouts = {0.1, 0.1, 0.1, 15.0, 1.0, 15.0, 1.5, 3.0, 1.5, 5.0, 2.0, 2.0, 2.0, 1.0, 1.0, 15.0};
+		double[] timeouts = {0.1, 0.1, 0.1, 15.0, 0.5, 15.0, 1.5, 3.0, 1.5, 5.0, 1.7, 2.0, 0.1, 1.0, 0.1, 15.0};
 		setStageTimeouts(timeouts);
 		robot.gyroReset();
 		
@@ -29,19 +29,24 @@ public class MainAuto extends AutoMode {
 		switch (m_stage) {
 		case 0:
 			spinUpShooter();
+			nextStage();
 			break;
 		case 1:
 			if(m_defenseType == Robot.Defense.PORTCULLIS) {
 				lowerPortcullisArm();
-			} else {
-				nextStage();
 			}
+			nextStage();
 			break;
 		case 2:
 			lowerArm();
+			nextStage();
 			break;
 		case 3:
-			driveToDefense();
+			if(m_defense == 1 || m_defenseType == Robot.Defense.CHEVAL) {
+				driveToDefense();
+			} else {
+				nextStage();
+			}
 			break;
 		case 4:
 			if(m_defenseType == Robot.Defense.CHEVAL) {
@@ -92,7 +97,11 @@ public class MainAuto extends AutoMode {
 			alignWithWall();
 			break;
 		case 11:
-			raiseArm();
+			if(!(m_defenseType == Robot.Defense.CHEVAL)) {
+				raiseArm();
+			} else {
+				nextStage();
+			}
 			break;
 		case 12:
 			waitForFlywheelToSpinUp();
@@ -102,6 +111,7 @@ public class MainAuto extends AutoMode {
 			break;
 		case 14:
 			turnOffTrigger();
+			nextStage();
 			break;
 		case 15:
 			lowerArm();
@@ -190,6 +200,11 @@ public class MainAuto extends AutoMode {
 			
 			if(SmartDashboard.getBoolean("Shoot in Auto?") && (m_defense == 1 || m_defense == 2)) {
 				target = 275;
+			}
+			
+			//if the robot hasn't driven to the defense already, increase the target by 43
+			if(!(m_defense == 1 || m_defenseType == Robot.Defense.CHEVAL)) {
+				target += 43;
 			}
 			
 			//try to drive faster over non-lowbar defenses
@@ -316,6 +331,11 @@ public class MainAuto extends AutoMode {
 			//lower the portcullis arm power to prevent motor damage
 			robot.portcullisArm.set(Robot.PORTCULLIS_LOW_POWER * Robot.PORTCULLIS_UP);
 			
+			//if the robot has driven over the cheval de frise, raise the arm immediately
+			if(m_defenseType == Robot.Defense.CHEVAL) {
+				raiseArm();
+			}
+			
 			stageData[m_stage].entered = true;
 		}
 		
@@ -338,8 +358,8 @@ public class MainAuto extends AutoMode {
 			stageData[m_stage].entered = true;
 		}
 		
-		//move on to the next stage when the arm is within 100 encoder ticks
-		if(Math.abs(robot.armEncoder.get() - robot.armControl.getSetpoint()) < 3) {
+		//move on to the next stage when the arm is within 3 encoder ticks
+		if(robot.armEncoder.get() < 3) {
 			nextStage();
 		}
 		
