@@ -283,7 +283,7 @@ public class MainAuto extends AutoMode {
 		}
 		
 		//drive the rest of the way to the wall (relying on timeout to stop driving)
-		robot.goNoDrifting(0.25, -robot.gyro.getAngle() * SmartDashboard.getNumber("k_angle"), 0.1, 0.5);
+		robot.goNoDrifting(0.25, -robot.gyro.getAngle() * Robot.k_ANGLE, 0.1, 0.5);
 	}
 	
 	public void raiseArm() {
