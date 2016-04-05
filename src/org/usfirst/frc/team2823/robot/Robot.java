@@ -183,6 +183,9 @@ public class Robot extends IterativeRobot {
 	
 	/*declare auto-related objects*/
 	SendableChooser autoChooser;
+	SendableChooser portChevalChooser;
+	
+	public static enum Defense {PORTCULLIS, CHEVAL, OTHER};
 	
 	/*declare test mode-related objects*/
 	TestMode testMode;
@@ -240,6 +243,18 @@ public class Robot extends IterativeRobot {
 		public void reset() {
 			state = false;
 			previousState = false;
+		}
+	}
+	
+	public class DefenseSelector {
+		Robot.Defense defense;
+		
+		public DefenseSelector(Robot.Defense d) {
+			defense = d;
+		}
+		
+		public Robot.Defense getDefense() {
+			return defense;
 		}
 	}
 	
@@ -1242,6 +1257,7 @@ public class Robot extends IterativeRobot {
     public void createAutoModes() {
     	
     	autoChooser = new SendableChooser();
+    	portChevalChooser = new SendableChooser();
     	
 		autoChooser.addDefault("Empty: Do Nothing", new EmptyAuto(this));
 		autoChooser.addObject("Defense 1 (Low Bar)", new MainAuto(this, 1));
@@ -1250,7 +1266,12 @@ public class Robot extends IterativeRobot {
 		autoChooser.addObject("Defense 4", new MainAuto(this, 4));
 		autoChooser.addObject("Defense 5", new MainAuto(this, 5));
 		
+		portChevalChooser.addDefault("Other", new DefenseSelector(Defense.OTHER));
+		portChevalChooser.addObject("Portcullis", new DefenseSelector(Defense.PORTCULLIS));
+		portChevalChooser.addObject("Cheval de Frise", new DefenseSelector(Defense.CHEVAL));
+		
     	SmartDashboard.putData("Autonomous Mode", autoChooser);
+    	SmartDashboard.putData("Defense", portChevalChooser);
 		
     }
     

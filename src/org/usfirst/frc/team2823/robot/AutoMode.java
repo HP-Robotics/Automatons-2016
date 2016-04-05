@@ -78,6 +78,8 @@ public class AutoMode {
 	public void endAuto() {
 		robot.driveRobot(0.0, 0.0);
 		
+		robot.portcullisArm.set(Robot.PORTCULLIS_LOW_POWER * Robot.PORTCULLIS_UP);
+		
 		robot.gyroDriveControl.disable();
 	}
 }

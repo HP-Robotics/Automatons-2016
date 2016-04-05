@@ -4,15 +4,20 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class MainAuto extends AutoMode {
 	
+	Robot.Defense m_defenseType = Robot.Defense.OTHER;
+	
 	public MainAuto(Robot robot, int defense) {
 		super(robot, defense);
 	}
 
 	@Override
 	public void autoInit() {
-		double[] timeouts = {0.1, 0.1, 15.0, 15.0, 1.5, 3.0, 1.5, 5.0, 2.0, 2.0, 2.0, 1.0, 1.0, 15.0};
+		double[] timeouts = {0.1, 0.1, 0.1, 15.0, 1.0, 15.0, 1.5, 3.0, 1.5, 5.0, 2.0, 2.0, 2.0, 1.0, 1.0, 15.0};
 		setStageTimeouts(timeouts);
 		robot.gyroReset();
+		
+		m_defenseType = ((Robot.DefenseSelector) robot.portChevalChooser.getSelected()).getDefense();
+		
 		startAuto();
 	}
 
@@ -26,15 +31,30 @@ public class MainAuto extends AutoMode {
 			spinUpShooter();
 			break;
 		case 1:
-			lowerArm();
+			if(m_defenseType == Robot.Defense.PORTCULLIS) {
+				lowerPortcullisArm();
+			} else {
+				nextStage();
+			}
 			break;
 		case 2:
-			driveToDefense();
+			lowerArm();
 			break;
 		case 3:
-			driveOverDefense();
+			driveToDefense();
 			break;
 		case 4:
+			if(m_defenseType == Robot.Defense.CHEVAL) {
+				lowerPortcullisArm();
+			} else {
+				nextStage();
+			}
+			break;
+		case 5:
+			driveOverDefense();
+			break;
+		case 6:
+			
 			//if the robot isn't going to shoot, stop running
 			if(!SmartDashboard.getBoolean("Shoot in Auto?")) {
 				m_stage = stageData.length;
@@ -47,43 +67,43 @@ public class MainAuto extends AutoMode {
 				nextStage();
 			}
 			break;
-		case 5:
+		case 7:
 			if(m_defense > 2) {
 				driveLeft();
 			} else {
 				nextStage();
 			}
 			break;
-		case 6:
+		case 8:
 			if(m_defense > 2) {
 				turnRight();
 			} else {
 				nextStage();
 			}
 			break;
-		case 7:
+		case 9:
 			if(m_defense > 2) {
 				finishDrivingToWall();
 			} else {
 				nextStage();
 			}
 			break;
-		case 8:
+		case 10:
 			alignWithWall();
 			break;
-		case 9:
+		case 11:
 			raiseArm();
 			break;
-		case 10:
+		case 12:
 			waitForFlywheelToSpinUp();
 			break;
-		case 11:
+		case 13:
 			turnOnTrigger();
 			break;
-		case 12:
+		case 14:
 			turnOffTrigger();
 			break;
-		case 13:
+		case 15:
 			lowerArm();
 		}
 	}
@@ -147,6 +167,15 @@ public class MainAuto extends AutoMode {
 		}
 	}
 	
+	public void lowerPortcullisArm() {
+		if(!stageData[m_stage].entered) {
+			
+			robot.portcullisArm.set(Robot.PORTCULLIS_HIGH_POWER * Robot.PORTCULLIS_DOWN);
+			
+			stageData[m_stage].entered = true;
+		}
+	}
+	
 	public void driveOverDefense() {
 		//run entry code
 		if(!stageData[m_stage].entered) {
@@ -173,6 +202,11 @@ public class MainAuto extends AutoMode {
 			robot.gyroDriveControl.enable();
 			
 			stageData[m_stage].entered = true;
+		}
+		
+		//raise the portcullis arm once the defense is crossed
+		if(Robot.driveEncoderToInches(robot.lDriveEncoder.get()) > 140 && Robot.driveEncoderToInches(robot.rDriveEncoder.get()) > 140) {
+			robot.portcullisArm.set(Robot.PORTCULLIS_HIGH_POWER * Robot.PORTCULLIS_UP);
 		}
 		
 		//move on to the next stage when the motion plan is finished
@@ -278,6 +312,9 @@ public class MainAuto extends AutoMode {
 		if(!stageData[m_stage].entered) {
 			//disable motion control
 			robot.gyroDriveControl.disable();
+			
+			//lower the portcullis arm power to prevent motor damage
+			robot.portcullisArm.set(Robot.PORTCULLIS_LOW_POWER * Robot.PORTCULLIS_UP);
 			
 			stageData[m_stage].entered = true;
 		}
