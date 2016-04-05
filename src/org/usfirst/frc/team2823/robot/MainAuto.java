@@ -160,7 +160,7 @@ public class MainAuto extends AutoMode {
 			robot.lDriveEncoder.reset();
 			robot.rDriveEncoder.reset();
 			
-			int target = 43;
+			int target = 41;
 			
 			//drive with gyro motion plan to the defense
 			robot.gyroDriveControl.enableLog("autoGyroDrivePID.csv");
@@ -193,7 +193,7 @@ public class MainAuto extends AutoMode {
 			robot.lDriveEncoder.reset();
 			robot.rDriveEncoder.reset();
 			
-			int target = 147;
+			int target = 149;
 			
 			//drive with gyro motion plan most of the way to the wall
 			robot.gyroDriveControl.enableLog("autoGyroDrivePID.csv");
@@ -202,9 +202,9 @@ public class MainAuto extends AutoMode {
 				target = 275;
 			}
 			
-			//if the robot hasn't driven to the defense already, increase the target by 43
+			//if the robot hasn't driven to the defense already, increase the target by 41
 			if(!(m_defense == 1 || m_defenseType == Robot.Defense.CHEVAL)) {
-				target += 43;
+				target += 41;
 			}
 			
 			//try to drive faster over non-lowbar defenses
