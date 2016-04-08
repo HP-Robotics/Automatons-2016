@@ -30,14 +30,16 @@ public class Robot extends IterativeRobot {
 	
 	/*declare constants*/
 	//this should be 40 for the old arm
-	static final int CALIBRATIONOFFSET = -98;
+	static final int CALIBRATIONOFFSET = -51;
 	
-	static final int SHOOTSETPOINT = (-25 + CALIBRATIONOFFSET);
+	static final int SHOOTSETPOINT = (-75 + CALIBRATIONOFFSET);
 	static final int HIGHTRAVELSETPOINT = (600 + CALIBRATIONOFFSET);
 	static final int MIDSETPOINT = (1800 + CALIBRATIONOFFSET);
 	static final int CHEVALSETPOINT = (2058 + CALIBRATIONOFFSET);
 	static final int INTAKESETPOINT = (2400 + CALIBRATIONOFFSET);
+	
 	static final int OFFSET = 100;
+	static final int AUTO_DRIVE_LEFT_OFFSET = 3;
 	
 	//these values work well for the old flywheel
 	//static final double FARSPEED = 3300.0;
@@ -547,11 +549,14 @@ public class Robot extends IterativeRobot {
     		portcullisArmSpeed = PORTCULLIS_HIGH_POWER;
     		portcullisDirection = PORTCULLIS_UP;
     		portcullisInitTime = Timer.getFPGATimestamp();
+    		SmartDashboard.putString("Portcullis Arm Is:", "Probably Down");
     		
     	} else if (portcullisDownState.updateState(stick2.getRawButton(LTRIGGER))) {
     		portcullisArmSpeed = -PORTCULLIS_HIGH_POWER;
     		portcullisDirection = PORTCULLIS_DOWN;
     		portcullisInitTime = Timer.getFPGATimestamp();
+    		SmartDashboard.putString("Portcullis Arm Is:", "Probably Up");
+
     		
     	}
     	
@@ -868,7 +873,8 @@ public class Robot extends IterativeRobot {
     			armControl.setSetpoint(setpoints[currentSetpoint]);
     			enableArmPid();
     			
-    			shooterSpeedControl.reset();
+    			//stop disabling shooterSpeedControl after vision shot
+    			//shooterSpeedControl.reset();
     			leftDriveControl.reset();
     			rightDriveControl.reset();
 				turnControl.reset();
@@ -1245,6 +1251,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("TargetShooterSpeed", 0.0);
     	SmartDashboard.putBoolean("Shoot in Auto?", true);
     	SmartDashboard.putBoolean("Vision Shot?", false);
+    	SmartDashboard.putString("Portcullis Arm Is:", "Probably Up");
     		
     }
     

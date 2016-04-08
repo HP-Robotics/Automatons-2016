@@ -177,7 +177,7 @@ public class MainAuto extends AutoMode {
 		}
 		
 		//move on to the next stage when the motion plan is finished and the arm is lowered
-		if(Math.abs(robot.armEncoder.get() - robot.armControl.getSetpoint()) < 100 && robot.gyroDriveControl.isPlanFinished()) {
+		if(Math.abs(robot.armEncoder.get() - robot.armControl.getSetpoint()) < 250 && robot.gyroDriveControl.isPlanFinished()) {
 			nextStage();
 		}
 	}
@@ -265,7 +265,7 @@ public class MainAuto extends AutoMode {
 			robot.lDriveEncoder.reset();
 			robot.rDriveEncoder.reset();
 			
-			double target = (m_defense - 2) * 50.75;
+			double target = ((m_defense - 2) * 50.75) + Robot.AUTO_DRIVE_LEFT_OFFSET;
 			
 			//drive with gyro motion plan most of the way to the wall
 			robot.motionDriveControl.enableLog("autoDriveLeft.csv");

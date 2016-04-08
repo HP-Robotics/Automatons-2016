@@ -39,7 +39,7 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
   private static final double OUTPUT_CLAMP_UP = -0.8;
   private static final double OUTPUT_CLAMP_DOWN = 0.6;
   private static final double OUTPUT_CLAMP_HOLD = -0.1;
-  private static final int OUTPUT_CLAMP_HOLD_THRESHOLD = -98;
+  private static final int OUTPUT_CLAMP_HOLD_THRESHOLD = Robot.CALIBRATIONOFFSET;
   private double m_P; // factor for "proportional" control
   private double m_I; // factor for "integral" control
   private double m_D; // factor for "derivative" control
