@@ -142,8 +142,13 @@ public class MainAuto extends AutoMode {
 			robot.armControl.enable();
 			
 			if(m_defense == 1) {
-				robot.armControl.setSetpoint(Robot.LOWTRAVELSETPOINT);
+				robot.armControl.setSetpoint(Robot.INTAKESETPOINT);
+				robot.currentSetpoint = 4;
+				
+			} else if(m_defenseType == Robot.Defense.CHEVAL) {
+				robot.armControl.setSetpoint(Robot.CHEVALSETPOINT);
 				robot.currentSetpoint = 3;
+				
 			} else {
 				robot.armControl.setSetpoint(Robot.MIDSETPOINT);
 				robot.currentSetpoint = 2;

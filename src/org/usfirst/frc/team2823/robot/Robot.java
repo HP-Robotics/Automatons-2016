@@ -30,12 +30,12 @@ public class Robot extends IterativeRobot {
 	
 	/*declare constants*/
 	//this should be 40 for the old arm
-	static final int CALIBRATIONOFFSET = 0;
+	static final int CALIBRATIONOFFSET = -98;
 	
 	static final int SHOOTSETPOINT = (-25 + CALIBRATIONOFFSET);
 	static final int HIGHTRAVELSETPOINT = (600 + CALIBRATIONOFFSET);
 	static final int MIDSETPOINT = (1800 + CALIBRATIONOFFSET);
-	static final int LOWTRAVELSETPOINT = (2280 + CALIBRATIONOFFSET);
+	static final int CHEVALSETPOINT = (2058 + CALIBRATIONOFFSET);
 	static final int INTAKESETPOINT = (2400 + CALIBRATIONOFFSET);
 	static final int OFFSET = 100;
 	
@@ -51,7 +51,7 @@ public class Robot extends IterativeRobot {
 	
 	static final double LEFTGOALDISTANCE = 13.25;
 	static final double CAMERAANGLE = 38;
-	static final double VISION_DRIVE_OFFSET = -6;
+	static final double VISION_DRIVE_OFFSET = -4;
     static final double VISION_DRIVE_ACCURATE_ENOUGH = 1.5;
 	static final double THRESHOLD_VISION_ANGLE = 5;
 	static final double VISION_WAIT_TIME = 0.5;
@@ -163,7 +163,7 @@ public class Robot extends IterativeRobot {
 	
 	double armSpeed = 0.0;
 	int currentSetpoint = 0;
-	int[] setpoints = {SHOOTSETPOINT, HIGHTRAVELSETPOINT, MIDSETPOINT, LOWTRAVELSETPOINT, INTAKESETPOINT};
+	int[] setpoints = {SHOOTSETPOINT, HIGHTRAVELSETPOINT, MIDSETPOINT, CHEVALSETPOINT, INTAKESETPOINT};
 	String[] setpointNames = {"Shoot", "High Travel", "Mid", "Low Travel", "Intake"};
 	
 	/*declare trigger-related objects and variables*/
@@ -183,6 +183,7 @@ public class Robot extends IterativeRobot {
 	
 	/*declare auto-related objects*/
 	SendableChooser autoChooser;
+	//SendableChooser visionAutoChooser;
 	SendableChooser portChevalChooser;
 	
 	public static enum Defense {PORTCULLIS, CHEVAL, OTHER};
@@ -320,11 +321,27 @@ public class Robot extends IterativeRobot {
     	
     	((AutoMode) autoChooser.getSelected()).autoInit();
     	
+    	/*
+    	if(SmartDashboard.getBoolean("Vision Shot?")) {
+    		((AutoMode) visionAutoChooser.getSelected()).autoInit();
+    	} else {
+    		((AutoMode) autoChooser.getSelected()).autoInit();
+    	}
+    	*/
+    	
     }
     
     public void autonomousPeriodic() {
-		((AutoMode) autoChooser.getSelected()).autoPeriodic();
-		
+    	((AutoMode) autoChooser.getSelected()).autoPeriodic();
+    	
+    	/*
+    	if(SmartDashboard.getBoolean("Vision Shot?")) {
+    		((AutoMode) visionAutoChooser.getSelected()).autoPeriodic();
+    	} else {
+    		((AutoMode) autoChooser.getSelected()).autoPeriodic();
+    	}
+    	*/
+    	
     }
     
     //QUICKCLICK teleopInit
@@ -1227,6 +1244,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("TestDrive Power", 0.0);
     	SmartDashboard.putNumber("TargetShooterSpeed", 0.0);
     	SmartDashboard.putBoolean("Shoot in Auto?", true);
+    	SmartDashboard.putBoolean("Vision Shot?", false);
     		
     }
     
@@ -1257,6 +1275,7 @@ public class Robot extends IterativeRobot {
     public void createAutoModes() {
     	
     	autoChooser = new SendableChooser();
+    	//visionAutoChooser = new SendableChooser();
     	portChevalChooser = new SendableChooser();
     	
 		autoChooser.addDefault("Empty: Do Nothing", new EmptyAuto(this));
@@ -1265,6 +1284,15 @@ public class Robot extends IterativeRobot {
 		autoChooser.addObject("Defense 3", new MainAuto(this, 3));
 		autoChooser.addObject("Defense 4", new MainAuto(this, 4));
 		autoChooser.addObject("Defense 5", new MainAuto(this, 5));
+		
+		//SendableChooser for use with vision autonomous
+		/*
+		visionAutoChooser.addDefault("Empty: Do Nothing", new EmptyAuto(this));
+		visionAutoChooser.addObject("Defense 2", new VisionAuto(this, 2));
+		visionAutoChooser.addObject("Defense 3", new VisionAuto(this, 3));
+		visionAutoChooser.addObject("Defense 4", new VisionAuto(this, 4));
+		visionAutoChooser.addObject("Defense 5", new VisionAuto(this, 5));
+		*/
 		
 		portChevalChooser.addDefault("Other", new DefenseSelector(Defense.OTHER));
 		portChevalChooser.addObject("Portcullis", new DefenseSelector(Defense.PORTCULLIS));
