@@ -12,7 +12,7 @@ public class MainAuto extends AutoMode {
 
 	@Override
 	public void autoInit() {
-		double[] timeouts = {0.1, 0.1, 0.1, 15.0, 0.5, 15.0, 1.5, 3.0, 1.5, 5.0, 1.7, 2.0, 0.1, 1.0, 0.1, 15.0};
+		double[] timeouts = {0.1, 0.1, 0.1, 15.0, 0.5, 15.0, 1.5, 3.0, 1.5, 5.0, 1.9, 2.0, 0.1, 1.0, 0.1, 15.0};
 		setStageTimeouts(timeouts);
 		robot.gyroReset();
 		

@@ -53,7 +53,7 @@ public class Robot extends IterativeRobot {
 	
 	static final double LEFTGOALDISTANCE = 13.25;
 	static final double CAMERAANGLE = 38;
-	static final double VISION_DRIVE_OFFSET = -4;
+	static final double VISION_DRIVE_OFFSET = -5;
     static final double VISION_DRIVE_ACCURATE_ENOUGH = 1.5;
 	static final double THRESHOLD_VISION_ANGLE = 5;
 	static final double VISION_WAIT_TIME = 0.5;
@@ -393,11 +393,11 @@ public class Robot extends IterativeRobot {
     	
     	//set tank drive or slow drive based on the height of the arm
     	if (!gyroDrive && !motionDriveEnabled) {
-    		if(armEncoder.get() < (MIDSETPOINT - OFFSET)) {
+    		if(armEncoder.get() < (HIGHTRAVELSETPOINT - OFFSET)) {
     			tankDriveEnabled = false;
     			slowDriveEnabled = true;
     			
-    		} else if(armEncoder.get() > (MIDSETPOINT - OFFSET)) {
+    		} else if(armEncoder.get() > (HIGHTRAVELSETPOINT - OFFSET)) {
     			tankDriveEnabled = true;
     			slowDriveEnabled = false;
     		}
@@ -549,14 +549,13 @@ public class Robot extends IterativeRobot {
     		portcullisArmSpeed = PORTCULLIS_HIGH_POWER;
     		portcullisDirection = PORTCULLIS_UP;
     		portcullisInitTime = Timer.getFPGATimestamp();
-    		SmartDashboard.putString("Portcullis Arm Is:", "Probably Down");
+    		SmartDashboard.putString("Portcullis Arm Is:", "Probably Up");
     		
     	} else if (portcullisDownState.updateState(stick2.getRawButton(LTRIGGER))) {
     		portcullisArmSpeed = -PORTCULLIS_HIGH_POWER;
     		portcullisDirection = PORTCULLIS_DOWN;
     		portcullisInitTime = Timer.getFPGATimestamp();
-    		SmartDashboard.putString("Portcullis Arm Is:", "Probably Up");
-
+    		SmartDashboard.putString("Portcullis Arm Is:", "Probably Down");
     		
     	}
     	
