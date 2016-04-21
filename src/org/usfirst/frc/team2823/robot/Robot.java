@@ -182,6 +182,8 @@ public class Robot extends IterativeRobot {
 	double portcullisInitTime = 0.0;
 	double portcullisArmSpeed = 0.0;
 	double portcullisDirection = PORTCULLIS_UP;
+	double portcullisIntervalTime = 0.0;
+	boolean loweredPtcSpeed = false;
 	
 	/*declare auto-related objects*/
 	SendableChooser autoChooser;
@@ -432,6 +434,16 @@ public class Robot extends IterativeRobot {
     	leftSpeed = Math.pow(-leftSpeed, 3.0);
     	rightSpeed = Math.pow(-rightSpeed, 3.0);
     	
+    	//pulse portcullis motor to prevent janking
+    	if(portcullisDirection == PORTCULLIS_UP && Math.abs(Timer.getFPGATimestamp() - portcullisIntervalTime) > 3 && loweredPtcSpeed) {
+    		portcullisArmSpeed = PORTCULLIS_UP * PORTCULLIS_HIGH_POWER;
+    		
+    		if(Math.abs(Timer.getFPGATimestamp() - portcullisIntervalTime) > 3.5) {
+    			portcullisIntervalTime = Timer.getFPGATimestamp();
+    			portcullisArmSpeed = PORTCULLIS_UP * PORTCULLIS_LOW_POWER;
+    		}
+    	}
+    	
     	//drive motors using calculated speeds
     	intake.set(intakeSpeed);
     	portcullisArm.set(portcullisArmSpeed);
@@ -561,19 +573,25 @@ public class Robot extends IterativeRobot {
     		portcullisArmSpeed = PORTCULLIS_HIGH_POWER;
     		portcullisDirection = PORTCULLIS_UP;
     		portcullisInitTime = Timer.getFPGATimestamp();
+    		
+    		loweredPtcSpeed = false;
     		SmartDashboard.putString("Portcullis Arm Is:", "Probably Up");
     		
     	} else if (portcullisDownState.updateState(stick2.getRawButton(LTRIGGER))) {
     		portcullisArmSpeed = -PORTCULLIS_HIGH_POWER;
     		portcullisDirection = PORTCULLIS_DOWN;
     		portcullisInitTime = Timer.getFPGATimestamp();
+    		
+    		loweredPtcSpeed = false;
     		SmartDashboard.putString("Portcullis Arm Is:", "Probably Down");
     		
     	}
     	
     	//lower the portcullis speed after 3 seconds have passed to prevent motor damage
-    	if(Math.abs(Timer.getFPGATimestamp() - portcullisInitTime) > 3) {
+    	if(Math.abs(Timer.getFPGATimestamp() - portcullisInitTime) > 3 && !loweredPtcSpeed) {
     		portcullisArmSpeed = PORTCULLIS_LOW_POWER * portcullisDirection;
+    		
+    		loweredPtcSpeed = true;
     		
     	}
     	
