@@ -519,6 +519,18 @@ public class Robot extends IterativeRobot {
     	return false;
     }
     
+    //this method overloads the above method and allows the thresholds to be specified separately
+    public boolean shooterIsAtSpeed(double lowerThreshold, double upperThreshold) {
+    	double actualSpeed = Math.abs(shooterCounter.getRateInRPMs());
+    	double targetSpeed = Math.abs(shooterSpeedControl.getSetpointInRPMs());
+    	
+    	if(actualSpeed > (targetSpeed - lowerThreshold) && actualSpeed < (targetSpeed + upperThreshold)) {
+    		return true;
+    	}
+    	
+    	return false;
+    }
+    
     //QUICKCLICK set motor speeds
     public void setIntakeSpeed() {
     	//set intake using dpad

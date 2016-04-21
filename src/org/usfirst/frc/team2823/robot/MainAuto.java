@@ -204,7 +204,7 @@ public class MainAuto extends AutoMode {
 			robot.gyroDriveControl.enableLog("autoGyroDrivePID.csv");
 			
 			if(SmartDashboard.getBoolean("Shoot in Auto?") && (m_defense == 1 || m_defense == 2)) {
-				target = 275;
+				target = 235;
 			}
 			
 			//if the robot hasn't driven to the defense already, increase the target by 41
@@ -373,7 +373,7 @@ public class MainAuto extends AutoMode {
 	public void waitForFlywheelToSpinUp() {
 		
 		//move on to the next stage when the flywheel is up to speed
-		if(robot.shooterIsAtSpeed(150)) {
+		if(robot.shooterIsAtSpeed(70, 35)) {
 			nextStage();
 		}
 	}
