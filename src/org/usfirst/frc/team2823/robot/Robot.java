@@ -144,6 +144,7 @@ public class Robot extends IterativeRobot {
 	boolean shootingWithVision = false;
 	boolean capturedFirstFrame = false;
 	boolean calculatedShotDistance = false;
+	boolean preMoved = false;
 	boolean clearedVisionAverage = false;
 	boolean atShotPosition = false;
 	boolean visionShotInProgress = false;
@@ -760,14 +761,10 @@ public class Robot extends IterativeRobot {
     		}
     		
     		//Okay, if a move is called for, do that move now.
-    		if(Timer.getFPGATimestamp() > (stopTime - 0.6) && setStopTime && !clearedVisionAverage) {
-    			clearedVisionAverage = true;
+    		if(Timer.getFPGATimestamp() > (stopTime - 0.6) && setStopTime && !preMoved) {
+    			preMoved = true;
     			
     			turnControl.reset();
-    			
-    			//clear Pi running average
-				TalkToPi.rawCommand("CLEAR");
-    			lastPiMessage = Timer.getFPGATimestamp();
     			
     			//pre-move based on data from before turn
     			lDriveEncoder.reset();
@@ -783,7 +780,6 @@ public class Robot extends IterativeRobot {
 				rightDriveControl.configureGoal(shortDistanceCorrect(target + VISION_DRIVE_OFFSET), Robot.MAXVELOCITY/3, Robot.MAXACCELERATION/5);
 				leftDriveControl.enable();
 				rightDriveControl.enable();
-
     			
     		}
     		
@@ -827,8 +823,12 @@ public class Robot extends IterativeRobot {
 				motionDriveControl.enable();
 			}*/
     		
-    		if(leftDriveControl.isPlanFinished() && rightDriveControl.isPlanFinished() && /*calculatedShotDistance*/ clearedVisionAverage && !atShotPosition) {
+    		if(leftDriveControl.isPlanFinished() && rightDriveControl.isPlanFinished() && /*calculatedShotDistance*/ preMoved && !atShotPosition) {
     			atShotPosition = true;
+    			
+    			//clear Pi running average
+				TalkToPi.rawCommand("CLEAR");
+    			lastPiMessage = Timer.getFPGATimestamp();
     			
     			//raise the arm
     			disableAndResetArmPid();
@@ -887,6 +887,7 @@ public class Robot extends IterativeRobot {
     			capturedFirstFrame = false;
     			calculatedShotDistance = false;
     			clearedVisionAverage = false;
+    			preMoved = false;
     			atShotPosition = false;
     			visionShotInProgress = false;
     			waitingToCheck = false;
