@@ -19,6 +19,8 @@ public class MainAuto extends AutoMode {
 		m_defenseType = ((Robot.DefenseSelector) robot.portChevalChooser.getSelected()).getDefense();
 		
 		startAuto();
+		
+		robot.resetDrivePIDs();
 	}
 
 	@Override
@@ -373,7 +375,7 @@ public class MainAuto extends AutoMode {
 	public void waitForFlywheelToSpinUp() {
 		
 		//move on to the next stage when the flywheel is up to speed
-		if(robot.shooterIsAtSpeed(70, 35)) {
+		if(robot.shooterIsAtSpeed(70, 60)) {
 			nextStage();
 		}
 	}

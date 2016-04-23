@@ -188,7 +188,7 @@ public class Robot extends IterativeRobot {
 	
 	/*declare auto-related objects*/
 	SendableChooser autoChooser;
-	//SendableChooser visionAutoChooser;
+	SendableChooser visionAutoChooser;
 	SendableChooser portChevalChooser;
 	
 	public static enum Defense {PORTCULLIS, CHEVAL, OTHER};
@@ -324,28 +324,21 @@ public class Robot extends IterativeRobot {
     	//begin driving portcullis arm into the robot
     	portcullisArmSpeed = PORTCULLIS_LOW_POWER * PORTCULLIS_UP;
     	
-    	((AutoMode) autoChooser.getSelected()).autoInit();
-    	
-    	/*
     	if(SmartDashboard.getBoolean("Vision Shot?")) {
     		((AutoMode) visionAutoChooser.getSelected()).autoInit();
     	} else {
     		((AutoMode) autoChooser.getSelected()).autoInit();
     	}
-    	*/
     	
     }
     
     public void autonomousPeriodic() {
-    	((AutoMode) autoChooser.getSelected()).autoPeriodic();
     	
-    	/*
     	if(SmartDashboard.getBoolean("Vision Shot?")) {
     		((AutoMode) visionAutoChooser.getSelected()).autoPeriodic();
     	} else {
     		((AutoMode) autoChooser.getSelected()).autoPeriodic();
     	}
-    	*/
     	
     }
     
@@ -385,7 +378,8 @@ public class Robot extends IterativeRobot {
     	//disable autonomous PID
     	gyroDriveControl.reset();
     	gyroDriveControl.setOutputRange(-1.0, 1.0);
-    
+    	
+    	resetDrivePIDs();
     }
     
     //QUICKCLICK teleopPeriodic
@@ -651,21 +645,17 @@ public class Robot extends IterativeRobot {
     					lastPiMessage=Timer.getFPGATimestamp();
     				}
     			} else {
-    				//if the goal isn't visible, spin to the close shot speed
-    				shooterSpeedControl.setSetpointInRPMs(CLOSESPEED);
+    				//if the goal isn't visible, spin to the selected shot speed
+    		    	//manual control of shooter RPM
+    		    	if(RPMState.updateState(stick1.getRawButton(YBUTTON)||stick2.getRawButton(YBUTTON))){
+    		    		currentTargetRPM = (currentTargetRPM + 1) % shooterTargetRPMs.length;
+    		    		shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
+    		    	}
 
-    				TalkToPi.rawCommand("RPM " + CLOSESPEED);
+    				TalkToPi.rawCommand("RPM " + shooterTargetRPMs[currentTargetRPM]);
     				lastPiMessage = Timer.getFPGATimestamp();
     			}
     		} 
-    	}
-    	
-    	//manual control of shooter RPM
-    	if(RPMState.updateState(stick1.getRawButton(YBUTTON)||stick2.getRawButton(YBUTTON))){
-    		currentTargetRPM = (currentTargetRPM + 1) % shooterTargetRPMs.length;
-    		shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
-    		TalkToPi.rawCommand("RPM " + shooterTargetRPMs[currentTargetRPM]);
-    		lastPiMessage = Timer.getFPGATimestamp();
     	}
     }
     
@@ -1099,6 +1089,14 @@ public class Robot extends IterativeRobot {
 		//armControl.closeLog();
     }
     
+    public void resetDrivePIDs() {
+    	motionDriveControl.reset();
+    	gyroDriveControl.reset();
+    	leftDriveControl.reset();
+    	rightDriveControl.reset();
+    	turnControl.reset();
+    }
+    
 	public static double driveInchesToEncoder(double i) {
 		return i * ENCODER_RESOLUTION / (2 * Math.PI * R * DRIVE_RATIO);
 	}
@@ -1312,7 +1310,7 @@ public class Robot extends IterativeRobot {
     public void createAutoModes() {
     	
     	autoChooser = new SendableChooser();
-    	//visionAutoChooser = new SendableChooser();
+    	visionAutoChooser = new SendableChooser();
     	portChevalChooser = new SendableChooser();
     	
 		autoChooser.addDefault("Empty: Do Nothing", new EmptyAuto(this));
@@ -1323,13 +1321,11 @@ public class Robot extends IterativeRobot {
 		autoChooser.addObject("Defense 5", new MainAuto(this, 5));
 		
 		//SendableChooser for use with vision autonomous
-		/*
 		visionAutoChooser.addDefault("Empty: Do Nothing", new EmptyAuto(this));
-		visionAutoChooser.addObject("Defense 2", new VisionAuto(this, 2));
-		visionAutoChooser.addObject("Defense 3", new VisionAuto(this, 3));
-		visionAutoChooser.addObject("Defense 4", new VisionAuto(this, 4));
-		visionAutoChooser.addObject("Defense 5", new VisionAuto(this, 5));
-		*/
+		visionAutoChooser.addObject("Defense 2", new MagicVisionAuto(this, 2));
+		visionAutoChooser.addObject("Defense 3", new MagicVisionAuto(this, 3));
+		visionAutoChooser.addObject("Defense 4", new MagicVisionAuto(this, 4));
+		visionAutoChooser.addObject("Defense 5", new MagicVisionAuto(this, 5));
 		
 		portChevalChooser.addDefault("Other", new DefenseSelector(Defense.OTHER));
 		portChevalChooser.addObject("Portcullis", new DefenseSelector(Defense.PORTCULLIS));
@@ -1337,6 +1333,7 @@ public class Robot extends IterativeRobot {
 		
     	SmartDashboard.putData("Autonomous Mode", autoChooser);
     	SmartDashboard.putData("Defense", portChevalChooser);
+    	SmartDashboard.putData("Vision Autonomous", visionAutoChooser);
 		
     }
     
