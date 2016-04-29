@@ -49,7 +49,7 @@ public class Robot extends IterativeRobot {
 	//these values work well for the new flywheel
 	static final double FARSPEED = 3700.0;
 	static final double MIDSPEED = 3600.0;
-	static final double CLOSESPEED = 3800.0;
+	static final double CLOSESPEED = 3900.0;
 	
 	static final double LEFTGOALDISTANCE = 13.25;
 	static final double CAMERAANGLE = 38;
@@ -163,7 +163,14 @@ public class Robot extends IterativeRobot {
 	
 	ToggleSwitch armUpState;
 	ToggleSwitch armDownState;
+	ToggleSwitch armEmergencyUpState;
+	ToggleSwitch armEmergencyDownState;
 	
+	boolean emergencyArmUp = false;
+	boolean emergencyArmDown = false;
+	
+	double emergencyArmUpTime = 0.0;
+	double emergencyArmDownTime = 0.0;
 	double armSpeed = 0.0;
 	int currentSetpoint = 0;
 	int[] setpoints = {SHOOTSETPOINT, HIGHTRAVELSETPOINT, MIDSETPOINT, CHEVALSETPOINT, INTAKESETPOINT};
@@ -400,11 +407,14 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	
+    	//swap into and out of emergency mode when START is pressed
     	if(emergencyState.updateState(stick1.getRawButton(STARTBUTTON) || stick2.getRawButton(STARTBUTTON))) {
     		if(emergencyState.switchEnabled()) {
     			emergencyMode = true;
     			disableAndResetArmPid();
     		} else {
+    			armControl.setSetpoint(setpoints[currentSetpoint]);
+    			armControl.enable();
     			emergencyMode = false;
     		}
     	}
@@ -902,15 +912,42 @@ public class Robot extends IterativeRobot {
     	}
     }
     
+  //set the arm speed without using encoders
     public void setArmSpeed() {
-    	//set the arm speed using the left and right bumper
-    	if(stick1.getRawButton(RBUMPER)){
-    		armSpeed = -SmartDashboard.getNumber("Arm Speed");
+    	//begin running the arm up at a higher speed
+    	if(armEmergencyUpState.updateState(stick1.getRawButton(RBUMPER) || stick2.getRawButton(RBUMPER))) {
+    		emergencyArmUp = true;
+    		emergencyArmDown = false;
+    		
+    		emergencyArmUpTime = Timer.getFPGATimestamp();
     	}
-    	else if(stick1.getRawButton(RTRIGGER)){
-    		armSpeed = SmartDashboard.getNumber("Arm Speed");
+    	
+    	//begin running the arm down at a higher speed
+    	if(armEmergencyDownState.updateState(stick1.getRawButton(RTRIGGER) || stick2.getRawButton(RTRIGGER))) {
+    		emergencyArmUp = false;
+    		emergencyArmDown = true;
+    		
+    		emergencyArmDownTime = Timer.getFPGATimestamp();
     	}
-    	else {
+    	
+    	//set the arm speed depending on whether the arm should go up or down
+    	if(stick1.getRawButton(RTRIGGER) || stick2.getRawButton(RTRIGGER)) {
+    		if(Math.abs(Timer.getFPGATimestamp() - emergencyArmDownTime) > 1.5 && emergencyArmDown) {
+    			armSpeed = 0.6;
+    		} else {
+    			armSpeed = 0.2;
+    		}
+    		
+    	} else if(Math.abs(Timer.getFPGATimestamp() - emergencyArmUpTime) > 1.4 && emergencyArmUp) {
+    		armSpeed = -0.1;
+    		
+    	} else if(emergencyArmUp) {
+    		armSpeed = -0.6;
+    		
+    	} else {
+    		emergencyArmUp = false;
+    		emergencyArmDown = false;
+    		
     		armSpeed = 0.0;
     	}
     }
@@ -1261,7 +1298,9 @@ public class Robot extends IterativeRobot {
     	armControl.setRobot(this);
     	
     	armUpState = new ToggleSwitch();
-    	armDownState = new ToggleSwitch();    	
+    	armDownState = new ToggleSwitch();
+    	armEmergencyUpState = new ToggleSwitch();
+    	armEmergencyDownState = new ToggleSwitch();
     }
     
     //put initial values to the SmartDashboard
