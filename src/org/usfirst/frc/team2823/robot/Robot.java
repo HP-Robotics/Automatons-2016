@@ -50,6 +50,7 @@ public class Robot extends IterativeRobot {
 	static final double FARSPEED = 3700.0;
 	static final double MIDSPEED = 3600.0;
 	static final double CLOSESPEED = 3900.0;
+	static final double OUTERSPEED = 4025.0;
 	
 	static final double LEFTGOALDISTANCE = 13.25;
 	static final double CAMERAANGLE = 38;
@@ -152,8 +153,8 @@ public class Robot extends IterativeRobot {
 	boolean checkingShotAccuracy = false;
 	double visionShotSpeed = 0.0;
 	int currentTargetRPM = 2;
-	double[] shooterTargetRPMs = {FARSPEED, MIDSPEED, CLOSESPEED};
-	String[] shooterTargetNames = {"Far Away", "Mid", "Close Up"};
+	double[] shooterTargetRPMs = {FARSPEED, MIDSPEED, CLOSESPEED, OUTERSPEED};
+	String[] shooterTargetNames = {"Far Away", "Mid", "Close Up", "Outerworks"};
 	
 	/*declare arm-related objects and variables*/
 	CANTalon arm;
@@ -618,62 +619,61 @@ public class Robot extends IterativeRobot {
     			shooterSpeedControl.enable();
     			shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
     			//shooterSpeedControl.setSetpointInRPMs(SmartDashboard.getNumber("TargetShooterSpeed"));
-    			
-    			
+
+
     		} else if(!shootingWithVision) {
     			System.out.println("Shooter PID should be off");
     			shooterSpeedControl.reset();
-        		shooterSpeedControl.closeLog();
-    			
-        		
+    			shooterSpeedControl.closeLog();
+
+
     		}
     	}
-    	
+
     	if (Timer.getFPGATimestamp() - checkSpeedTime > 0.2) {
     		//automatic control of shooter RPM if the vision code is running and can see a goal
+    		System.out.println("Other Hello");
     		checkSpeedTime = Timer.getFPGATimestamp();
     		String piData = pi.getLast();
-    		if(!(piData == null)) {
-    			if(piData.contains("GOOD")) {
-    				//get data from Pi
-    				String[] piDataArray = piData.split(" ");
-    				try{
-    					cameraToGoalAngle = Double.parseDouble(piDataArray[1]);
-    					cameraToLeftEdge = Double.parseDouble(piDataArray[2]);
-    					cameraToGoalDistance = Double.parseDouble(piDataArray[3]);
-    					cameraToRightEdge = Double.parseDouble(piDataArray[4]);
+    		if((piData != null) && piData.contains("GOOD")) {
 
-    					//pre-calculate shooter RPM based on distance to wall
-    					double visionShotSpeed = (-0.002342381 * Math.pow(cameraToGoalDistance, 3)) + (0.83275224 * Math.pow(cameraToGoalDistance, 2)) +
-    							(-89.22806 * cameraToGoalDistance) + 6549.93;
+    			//get data from Pi
+    			String[] piDataArray = piData.split(" ");
+    			try{
+    				cameraToGoalAngle = Double.parseDouble(piDataArray[1]);
+    				cameraToLeftEdge = Double.parseDouble(piDataArray[2]);
+    				cameraToGoalDistance = Double.parseDouble(piDataArray[3]);
+    				cameraToRightEdge = Double.parseDouble(piDataArray[4]);
 
-    					shooterSpeedControl.setSetpointInRPMs(visionShotSpeed);
+    				//pre-calculate shooter RPM based on distance to wall
+    				double visionShotSpeed = (-0.002342381 * Math.pow(cameraToGoalDistance, 3)) + (0.83275224 * Math.pow(cameraToGoalDistance, 2)) +
+    						(-89.22806 * cameraToGoalDistance) + 6549.93;
 
-    					TalkToPi.rawCommand("RPM " + visionShotSpeed);
-    					lastPiMessage = Timer.getFPGATimestamp();
-    				}
-    				catch (Exception e){
-    					shooterSpeedControl.setSetpointInRPMs(CLOSESPEED);
-    					System.out.println("ERROR PARSING MESSAGE " + piData);
+    				shooterSpeedControl.setSetpointInRPMs(visionShotSpeed);
 
-    					TalkToPi.rawCommand("RPM " + CLOSESPEED);
-    					lastPiMessage=Timer.getFPGATimestamp();
-    				}
-    			} else {
-    				//if the goal isn't visible, spin to the selected shot speed
-    		    	//manual control of shooter RPM
-    		    	if(RPMState.updateState(stick1.getRawButton(YBUTTON)||stick2.getRawButton(YBUTTON))){
-    		    		currentTargetRPM = (currentTargetRPM + 1) % shooterTargetRPMs.length;
-    		    		shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
-    		    	}
-
-    				TalkToPi.rawCommand("RPM " + shooterTargetRPMs[currentTargetRPM]);
+    				TalkToPi.rawCommand("RPM " + visionShotSpeed);
     				lastPiMessage = Timer.getFPGATimestamp();
     			}
+    			catch (Exception e){
+    				shooterSpeedControl.setSetpointInRPMs(CLOSESPEED);
+    				System.out.println("ERROR PARSING MESSAGE " + piData);
+
+    				TalkToPi.rawCommand("RPM " + CLOSESPEED);
+    				lastPiMessage=Timer.getFPGATimestamp();
+    			}
     		} 
+
+    	}
+    	//if the goal isn't visible, spin to the selected shot speed
+    	//manual control of shooter RPM
+    	if(RPMState.updateState(stick1.getRawButton(YBUTTON)||stick2.getRawButton(YBUTTON))){
+    		currentTargetRPM = (currentTargetRPM + 1) % shooterTargetRPMs.length;
+    		shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
+    		TalkToPi.rawCommand("RPM " + shooterTargetRPMs[currentTargetRPM]);
+    		lastPiMessage = Timer.getFPGATimestamp();
     	}
     }
-    
+
     public double shortDistanceCorrect(double in) {
         if (Math.abs(in) < DISTANCE_CORRECT_THRESHOLD) {
         	if (in < 0) {
