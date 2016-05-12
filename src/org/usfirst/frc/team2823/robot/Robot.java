@@ -77,6 +77,7 @@ public class Robot extends IterativeRobot {
 	static final int RBUMPER = 6;
 	static final int LTRIGGER = 7;
 	static final int RTRIGGER = 8;
+	static final int BACKBUTTON = 9;
 	static final int STARTBUTTON = 10;
 	
 	static final int LEFTAXIS = 1;
@@ -143,6 +144,7 @@ public class Robot extends IterativeRobot {
 	ToggleSwitch visionShootState;
 	
 	boolean shootingWithVision = false;
+	boolean turningWithVision = false;
 	boolean capturedFirstFrame = false;
 	boolean calculatedShotDistance = false;
 	boolean preMoved = false;
@@ -396,6 +398,7 @@ public class Robot extends IterativeRobot {
     	
     	runTrigger();
     	shootWithMagic();
+    	turnWithMagic();
     	
     	//set tank drive or slow drive based on the height of the arm
     	if (!gyroDrive && !motionDriveEnabled) {
@@ -632,7 +635,6 @@ public class Robot extends IterativeRobot {
 
     	if (Timer.getFPGATimestamp() - checkSpeedTime > 0.2) {
     		//automatic control of shooter RPM if the vision code is running and can see a goal
-    		System.out.println("Other Hello");
     		checkSpeedTime = Timer.getFPGATimestamp();
     		String piData = pi.getLast();
     		if((piData != null) && piData.contains("GOOD")) {
@@ -916,7 +918,55 @@ public class Robot extends IterativeRobot {
     		}
     	}
     }
+    public void turnWithMagic () {
+    	//run the *magic* button code to read data from the Pi, drive to correct distance, spin up shooter to correct RPM, then fire
+    	if((stick1.getRawButton(BACKBUTTON) || stick2.getRawButton(BACKBUTTON))) {
+    		if(!turningWithVision) {
+    			turningWithVision = true;
+    			
+				motionDriveEnabled = true;
+    			tankDriveEnabled= false;
+    			slowDriveEnabled = false;
+    			
+    			System.err.println("BACK BUTTON PRESSED");
+    			
+    			//begin Pi video capture
+    			TalkToPi.rawCommand("WATCH6");
+    			lastPiMessage = Timer.getFPGATimestamp();
+    			//wait for 200ms before continuing
+    			
+    			String piData = pi.getLast();
+    			System.out.println("INIT PI DATA: " + piData);
+    	    	if(piData == null){
+    	    		return;
+    	    	}
+    			
+    			//try to fire if the goal is visible
+    			if(piData.contains("GOOD")) {
+        			//get data from Pi
+    				String[] piDataArray = piData.split(" ");
     
+    				double turnAngle = Double.parseDouble(piDataArray[5]);
+
+    				gyroReset();
+
+    				//Turn if we need to
+    				if(Math.abs(turnAngle) > 1.0) {
+    					turnControl.setSetpoint(turnAngle);
+    					System.err.println("Turn Angle" + turnAngle);
+    					turnControl.enable();
+    				}
+    			}
+    		}
+    	}else {
+    		if(turningWithVision){
+    		turnControl.reset();
+    		}
+    		turningWithVision = false;
+    		motionDriveEnabled = false;
+
+    	}
+    }
   //set the arm speed without using encoders
     public void setArmSpeed() {
     	//begin running the arm up at a higher speed
