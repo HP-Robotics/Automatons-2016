@@ -175,6 +175,7 @@ public class Robot extends IterativeRobot {
 	int currentSetpoint = 0;
 	int[] setpoints = {SHOOTSETPOINT, HIGHTRAVELSETPOINT, MIDSETPOINT, CHEVALSETPOINT, INTAKESETPOINT};
 	String[] setpointNames = {"Shoot", "High Travel", "Mid", "Low Travel", "Intake"};
+	String emergencyModeDisplay = "";
 	
 	/*declare trigger-related objects and variables*/
 	Servo trigger;
@@ -411,11 +412,15 @@ public class Robot extends IterativeRobot {
     	if(emergencyState.updateState(stick1.getRawButton(STARTBUTTON) || stick2.getRawButton(STARTBUTTON))) {
     		if(emergencyState.switchEnabled()) {
     			emergencyMode = true;
+    			emergencyModeDisplay = "EMERGENCY MODE";
+    			
     			disableAndResetArmPid();
     		} else {
     			armControl.setSetpoint(setpoints[currentSetpoint]);
     			armControl.enable();
+    			
     			emergencyMode = false;
+    			emergencyModeDisplay = "";
     		}
     	}
     	
@@ -1319,6 +1324,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putBoolean("Shoot in Auto?", true);
     	SmartDashboard.putBoolean("Vision Shot?", false);
     	SmartDashboard.putString("Portcullis Arm Is:", "Probably Up");
+    	SmartDashboard.putString("Emergency Mode", "");
     		
     }
     
@@ -1338,6 +1344,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("ActualShooterSpeed", shooterCounter.getRateInRPMs());
     	SmartDashboard.putString("Intake", intakeOn);
     	SmartDashboard.putString("Arm Setpoint", setpointNames[currentSetpoint]);
+    	SmartDashboard.putString("Emergency Mode", emergencyModeDisplay);
     	
     }
     

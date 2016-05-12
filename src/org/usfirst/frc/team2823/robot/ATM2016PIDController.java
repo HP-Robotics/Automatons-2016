@@ -953,8 +953,8 @@ public class ATM2016PIDController implements PIDInterface, LiveWindowSendable, C
    */
   @Override
   public synchronized void enable() {
+	m_initTime = Timer.getFPGATimestamp();
     m_enabled = true;
-    m_initTime = Timer.getFPGATimestamp();
 
     if (table != null) {
       table.putBoolean("enabled", true);
