@@ -221,6 +221,7 @@ public class Robot extends IterativeRobot {
 	double checkWaitTime = 0.0;
 	double initFrameCaptureTime = 0.0;
 	double checkSpeedTime = 0.0;
+	double manualSpeedDelayTime = 0.0;
 	
 	boolean piIsStarted = false;
 	boolean setStopTime = false;
@@ -635,9 +636,9 @@ public class Robot extends IterativeRobot {
 
     	if (Timer.getFPGATimestamp() - checkSpeedTime > 0.2) {
     		//automatic control of shooter RPM if the vision code is running and can see a goal
-    		checkSpeedTime = Timer.getFPGATimestamp();
     		String piData = pi.getLast();
     		if((piData != null) && piData.contains("GOOD")) {
+        		checkSpeedTime = Timer.getFPGATimestamp();
 
     			//get data from Pi
     			String[] piDataArray = piData.split(" ");
@@ -664,12 +665,16 @@ public class Robot extends IterativeRobot {
     				lastPiMessage=Timer.getFPGATimestamp();
     			}
     		} 
-
     	}
-    	//if the goal isn't visible, spin to the selected shot speed
+    	
     	//manual control of shooter RPM
     	if(RPMState.updateState(stick1.getRawButton(YBUTTON)||stick2.getRawButton(YBUTTON))){
     		currentTargetRPM = (currentTargetRPM + 1) % shooterTargetRPMs.length;
+    	}
+    	
+    	//if the goal hasn't been visible for some time, spin to the selected shot speed at an interval
+    	if(Math.abs(Timer.getFPGATimestamp() - checkSpeedTime) > 2.5 && Math.abs(Timer.getFPGATimestamp() - manualSpeedDelayTime) > 0.2) {
+    		manualSpeedDelayTime = Timer.getFPGATimestamp();
     		shooterSpeedControl.setSetpointInRPMs(shooterTargetRPMs[currentTargetRPM]);
     		TalkToPi.rawCommand("RPM " + shooterTargetRPMs[currentTargetRPM]);
     		lastPiMessage = Timer.getFPGATimestamp();
