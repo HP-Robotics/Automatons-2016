@@ -354,7 +354,7 @@ public class MagicVisionAuto extends AutoMode {
 			robot.rDriveEncoder.reset();
 
 			//double target = (preTargetPosition / Math.cos(Math.toRadians(gyro.getAngle())));
-			double target = robot.preTargetPosition * Math.cos(Math.toRadians(robot.gyro.getAngle())) + robot.cameraToGoalDistance * Math.sin(Math.toRadians(robot.gyro.getAngle()));
+			double target = robot.preTargetPosition * Math.cos(Math.toRadians(robot.gyro.getAngle())) + robot.cameraToGoalDistance * Math.abs(Math.sin(Math.toRadians(robot.gyro.getAngle())));
 
 			System.out.println("POST-TURN TURN GYRO " + robot.gyro.getAngle());
 			System.out.println("POST-TURN TARGET: " + target);

@@ -783,7 +783,7 @@ public class Robot extends IterativeRobot {
     			rDriveEncoder.reset();
     			
     			//double target = (preTargetPosition / Math.cos(Math.toRadians(gyro.getAngle())));
-    			double target = preTargetPosition * Math.cos(Math.toRadians(gyro.getAngle())) + cameraToGoalDistance * Math.sin(Math.toRadians(gyro.getAngle()));
+    			double target = preTargetPosition * Math.cos(Math.toRadians(gyro.getAngle())) + cameraToGoalDistance * Math.abs(Math.sin(Math.toRadians(gyro.getAngle())));
     			
     			System.out.println("POST-TURN TURN GYRO " + gyro.getAngle());
     			System.out.println("POST-TURN TARGET: " + target);
